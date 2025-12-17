@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  # Note: If port 5432 is already in use, set POSTGRES_PORT in .env (e.g., 5433)
+  postgres:
+    image: postgres:15-alpine
+    container_name: karma_bot_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-karma_bot}
+      POSTGRES_USER: ${POSTGRES_USER:-karma_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - karma_bot_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"  # Default to 5433 to avoid conflict with existing PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-karma_bot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LinkedIn Karma Bot
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: karma_bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Telegram settings
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+
+      # Database settings
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-karma_bot}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-karma_bot}
+
+      # Default bot settings
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-ru}
+      DEFAULT_KARMA_PERIOD: ${DEFAULT_KARMA_PERIOD:-7}
+      DEFAULT_VETERAN_THRESHOLD: ${DEFAULT_VETERAN_THRESHOLD:-30}
+      DEFAULT_POST_COST: ${DEFAULT_POST_COST:-0}
+    # volumes:
+    #   # Mount bot code for development (comment out for production)
+    #   - ./bot:/app/bot
+    #   - ./scripts:/app/scripts
+    command: python -m bot.main
+
+volumes:
+  karma_bot_postgres_data:
+    driver: local

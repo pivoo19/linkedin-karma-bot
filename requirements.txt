@@ -1,0 +1,21 @@
+# Telegram Bot
+aiogram==3.13.1
+
+# Database
+sqlalchemy==2.0.36
+aiosqlite==0.20.0
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Configuration
+pydantic>=2.4.1,<2.10
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# Utilities
+regex==2024.11.6
