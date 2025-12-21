@@ -8,12 +8,12 @@
 
 ## Conflict Check
 
-Other applications are already running on the VPS:
-- `web3-news-analyzer-postgres-1` uses port **5432**
-- Other containers: `web3-news-analyzer-app-1`, `slack-github-issue-creator`, `sniper-bot-*`
+Before deployment, check for potential conflicts:
+- Other PostgreSQL containers may use port **5432**
+- Other containers with similar names
 
 **Important:** Our bot uses:
-- Containers: `karma_bot` and `karma_bot_postgres` (no conflicts)
+- Containers: `karma_bot` and `karma_bot_postgres`
 - PostgreSQL port: **5433** by default (to avoid conflict with existing PostgreSQL on 5432)
 
 ## Quick Deployment
@@ -34,7 +34,7 @@ The script automatically:
 After syncing files, connect to the server:
 
 ```bash
-ssh -i ~/.ssh/ipavlov root@bots
+ssh -i ~/.ssh/your_ssh_key root@your-server.com
 cd /root/linkedin-karma-bot
 ```
 
@@ -98,7 +98,7 @@ After code changes:
 # Locally
 ./deploy.sh
 
-# On server
+# On server (replace with your actual path)
 cd /root/linkedin-karma-bot
 docker-compose down
 docker-compose up -d --build
@@ -108,6 +108,7 @@ docker-compose logs -f bot
 ## Stop and Remove
 
 ```bash
+# Replace with your actual deployment path
 cd /root/linkedin-karma-bot
 docker-compose down
 

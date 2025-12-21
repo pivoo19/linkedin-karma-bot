@@ -38,6 +38,14 @@ ENV/
 .env
 .env.local
 .env.*.local
+*.env
+
+# SSH keys and sensitive files
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*.ppk
 
 # Database files
 *.db
