@@ -120,4 +120,8 @@ Available commands:
     "points": "points",
     "user": "user",
     "deleted_user": "deleted user",
+    
+    # Admin notifications
+    "admin_notification": "🔔 New help request\n\n{response}\n\n📎 Message link: {message_link}",
+    "user_notification": "🔔 New post in group\n\n{response}\n\n📎 Message link: {message_link}",
 }

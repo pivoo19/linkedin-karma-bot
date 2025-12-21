@@ -64,16 +64,26 @@ class KarmaService:
         result = await self.session.execute(query)
         return result.scalar_one() or 0
 
-    async def get_total_karma(self, user_id: int, chat_id: int) -> int:
-        """Get user's total karma in a specific chat.
+    async def get_total_karma(self, user_id: int, chat_id: Optional[int] = None) -> int:
+        """Get user's total karma.
+
+        If chat_id is provided, returns karma for that chat; otherwise falls back
+        to the user's global karma_total.
 
         Args:
             user_id: Telegram user ID
-            chat_id: Telegram chat ID
+            chat_id: Optional Telegram chat ID
 
         Returns:
-            Total karma points in this chat
+            Total karma points
         """
+        if chat_id is None:
+            result = await self.session.execute(
+                select(User.karma_total).where(User.telegram_id == user_id)
+            )
+            karma = result.scalar_one_or_none()
+            return karma or 0
+
         karma_repo = UserKarmaRepository(self.session)
         return await karma_repo.get_total_karma(user_id, chat_id)
 
@@ -122,16 +132,16 @@ class KarmaService:
 
         return first_post_at is None
 
-    async def is_veteran(self, user_id: int, chat_id: int, threshold: int = 30) -> bool:
-        """Check if a user is a veteran (has total karma above threshold in a chat).
+    async def is_veteran(self, user_id: int, chat_id: Optional[int] = None, threshold: int = 30) -> bool:
+        """Check if a user is a veteran (has total karma above threshold).
 
         Args:
             user_id: Telegram user ID
-            chat_id: Telegram chat ID
+            chat_id: Optional Telegram chat ID
             threshold: Minimum karma points required to be a veteran (default: 30)
 
         Returns:
-            True if the user's total karma in this chat is >= threshold, False otherwise
+            True if the user's total karma is >= threshold, False otherwise
         """
         total_karma = await self.get_total_karma(user_id, chat_id)
         return total_karma >= threshold

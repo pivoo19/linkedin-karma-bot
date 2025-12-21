@@ -78,3 +78,4 @@ class UserKarma(Base):
             f"karma_total={self.karma_total})>"
         )
 
+

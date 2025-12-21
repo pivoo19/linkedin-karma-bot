@@ -120,4 +120,8 @@ translations = {
     "points": "очков",
     "user": "пользователь",
     "deleted_user": "удалённый пользователь",
+    
+    # Admin notifications
+    "admin_notification": "🔔 Новый запрос на поддержку\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
+    "user_notification": "🔔 Новый пост в группе\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
 }

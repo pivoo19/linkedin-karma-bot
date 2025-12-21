@@ -3,6 +3,7 @@
 This module handles messages containing LinkedIn URLs and creates post records.
 """
 
+import logging
 from datetime import datetime
 from aiogram import Router, F
 from aiogram.types import Message
@@ -17,6 +18,128 @@ from bot.i18n import t
 
 
 router = Router(name="messages")
+logger = logging.getLogger(__name__)
+
+
+def get_message_link(message: Message) -> str:
+    """Generate a link to the message in the chat.
+    
+    Args:
+        message: Telegram message object
+        
+    Returns:
+        Link to the message in format https://t.me/... or https://t.me/c/...
+    """
+    if not message.chat:
+        return ""
+    
+    chat_id = message.chat.id
+    message_id = message.message_id
+    
+    # If chat has username, use public link format
+    if message.chat.username:
+        return f"https://t.me/{message.chat.username}/{message_id}"
+    
+    # For private chats/channels, use c/ format
+    if chat_id < 0:
+        # For supergroups and channels (chat_id starts with -100)
+        # Format: https://t.me/c/{abs(chat_id) - 1000000000000}/{message_id}
+        if abs(chat_id) >= 1000000000000:
+            # Supergroup or channel
+            private_chat_id = abs(chat_id) - 1000000000000
+            return f"https://t.me/c/{private_chat_id}/{message_id}"
+        else:
+            # Regular group (rare case)
+            return f"https://t.me/c/{abs(chat_id)}/{message_id}"
+    
+    # For private chats (positive chat_id, very rare for groups)
+    return f"https://t.me/c/{chat_id}/{message_id}"
+
+
+async def get_chat_users(session: AsyncSession, chat_id: int) -> list[int]:
+    """Get list of all user IDs who have interacted with the chat (posted or reacted).
+    
+    Args:
+        session: Database session
+        chat_id: Telegram chat ID
+        
+    Returns:
+        List of user IDs who have interacted with the chat
+    """
+    try:
+        from sqlalchemy import select
+        from bot.models import Post, Reaction
+
+        # Get all user IDs from posts
+        post_users_query = select(Post.author_id).where(
+            Post.chat_id == chat_id
+        ).distinct()
+        
+        # Get all user IDs from reactions (through posts in this chat)
+        reaction_users_query = (
+            select(Reaction.user_id)
+            .join(Post, Reaction.post_id == Post.id)
+            .where(Post.chat_id == chat_id)
+            .distinct()
+        )
+        
+        # Execute both queries and combine results
+        post_users_result = await session.execute(post_users_query)
+        post_user_ids = set(post_users_result.scalars().all())
+        
+        reaction_users_result = await session.execute(reaction_users_query)
+        reaction_user_ids = set(reaction_users_result.scalars().all())
+        
+        # Union of both sets
+        all_user_ids = list(post_user_ids | reaction_user_ids)
+        
+        return all_user_ids
+    except Exception as e:
+        logger.error(f"Error getting chat users: {e}", exc_info=True)
+        return []
+
+
+async def notify_users(
+    bot,
+    session: AsyncSession,
+    chat_id: int,
+    response_text: str,
+    message_link: str,
+    lang: str
+) -> None:
+    """Send notification to all chat users about a new LinkedIn post.
+    
+    Args:
+        bot: Bot instance
+        session: Database session
+        chat_id: Telegram chat ID
+        response_text: The response text that was sent to the group
+        message_link: Link to the message in the group
+        lang: Language code for the notification
+    """
+    try:
+        user_ids = await get_chat_users(session, chat_id)
+        if not user_ids:
+            return
+
+        notification_text = t(
+            "user_notification",
+            lang=lang,
+            response=response_text,
+            message_link=message_link
+        )
+
+        for user_id in user_ids:
+            try:
+                await bot.send_message(
+                    chat_id=user_id,
+                    text=notification_text
+                )
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Error sending notification to user {user_id}: {error_msg}")
+    except Exception as e:
+        logger.error(f"Error in notify_users: {e}", exc_info=True)
 
 
 @router.message(F.text)
@@ -41,6 +164,10 @@ async def handle_message(message: Message):
     linkedin_urls = extract_linkedin_urls(message.text)
     if not linkedin_urls:
         return
+    
+    logger.info(
+        f"LinkedIn URL detected from user {message.from_user.id} in chat {message.chat.id}: {linkedin_urls[0]}"
+    )
 
     # Get first LinkedIn URL
     linkedin_url = linkedin_urls[0]
@@ -161,5 +288,16 @@ async def handle_message(message: Message):
                 period=settings.karma_period_days
             )
 
-        # Send response
         await message.reply(response)
+        try:
+            message_link = get_message_link(message)
+            await notify_users(
+                bot=message.bot,
+                session=session,
+                chat_id=message.chat.id,
+                response_text=response,
+                message_link=message_link,
+                lang=lang
+            )
+        except Exception as e:
+            logger.error(f"Error in notification process: {e}", exc_info=True)
