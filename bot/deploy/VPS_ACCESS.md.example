@@ -1,0 +1,58 @@
+# Доступы для деплоя на VPS
+
+> ⚠️ **Важно**: Скопируйте этот файл в `VPS_ACCESS.md` и заполните своими данными.
+> Файл `VPS_ACCESS.md` находится в `.gitignore` и не попадёт в репозиторий.
+
+## Параметры подключения
+
+- **REMOTE_USER**: `your_user` (например: `root`)
+- **REMOTE_HOST**: `your_host` (например: `your-server.com` или алиас из `~/.ssh/config`)
+- **REMOTE_PATH**: `/path/to/deployment` (например: `/root/linkedin-karma-bot`)
+- **SSH_KEY**: `~/.ssh/your_key` (например: `~/.ssh/id_rsa`)
+
+## Команда подключения
+
+```bash
+ssh -i ~/.ssh/your_key your_user@your_host
+```
+
+## Команда деплоя
+
+```bash
+./deploy.sh
+```
+
+Или вручную:
+
+```bash
+rsync -avz --delete \
+    --exclude='.git' \
+    --exclude='__pycache__' \
+    --exclude='*.pyc' \
+    --exclude='.env' \
+    --exclude='logs' \
+    --exclude='venv' \
+    --exclude='.venv' \
+    --exclude='tests' \
+    --exclude='docs' \
+    -e "ssh -i ~/.ssh/your_key" \
+    ./ your_user@your_host:/path/to/deployment/
+```
+
+## Настройка через .env
+
+Рекомендуемый способ - добавить параметры деплоя в `.env` файл:
+
+```bash
+# Deployment configuration
+DEPLOY_REMOTE_USER=your_user
+DEPLOY_REMOTE_HOST=your_host
+DEPLOY_REMOTE_PATH=/path/to/deployment
+DEPLOY_SSH_KEY=~/.ssh/your_key
+```
+
+Тогда можно просто запустить:
+
+```bash
+./deploy.sh
+```

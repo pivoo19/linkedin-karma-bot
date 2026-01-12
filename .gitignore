@@ -3,6 +3,13 @@
 .env.local
 .env.*.local
 
+# Deployment configs with sensitive data
+bot/deploy/VPS_ACCESS.md
+**/secrets/
+**/*_secret.py
+**/*_secrets.py
+**/*_credentials.py
+
 # Python cache
 __pycache__/
 *.py[cod]
