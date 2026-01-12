@@ -34,3 +34,5 @@ def downgrade() -> None:
     op.drop_table('user_karma')
 
 
+
+
