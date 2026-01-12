@@ -5,7 +5,8 @@ from text messages in the karma bot.
 """
 
 import re
-from typing import List
+from typing import List, Optional
+from aiogram.types import Message, MessageEntity
 
 
 # Regex pattern to match LinkedIn post URLs
@@ -18,6 +19,20 @@ LINKEDIN_PATTERN = re.compile(
     r'(?:posts/[^\s]+|feed/update/[^\s]+|pulse/[^\s]+)',
     re.IGNORECASE
 )
+
+
+def is_linkedin_url(url: str) -> bool:
+    """Check if a URL is a valid LinkedIn post URL.
+
+    Args:
+        url: The URL to check
+
+    Returns:
+        True if the URL is a LinkedIn post URL, False otherwise
+    """
+    if not url:
+        return False
+    return bool(LINKEDIN_PATTERN.match(url))
 
 
 def extract_linkedin_urls(text: str) -> List[str]:
@@ -42,6 +57,53 @@ def extract_linkedin_urls(text: str) -> List[str]:
     # Find all matches and return unique URLs
     matches = LINKEDIN_PATTERN.findall(text)
     return list(set(matches))  # Remove duplicates
+
+
+def extract_linkedin_urls_from_message(message: Message) -> List[str]:
+    """Extract all LinkedIn post URLs from a Telegram message.
+    
+    This function extracts URLs from both:
+    1. Plain text in the message
+    2. Telegram message entities (url, text_link types)
+    
+    Args:
+        message: Telegram message object
+        
+    Returns:
+        A list of unique LinkedIn URLs found in the message
+    """
+    linkedin_urls = []
+    
+    # Extract from plain text
+    if message.text:
+        linkedin_urls.extend(extract_linkedin_urls(message.text))
+    
+    # Extract from message entities
+    if message.entities:
+        for entity in message.entities:
+            url = None
+            
+            # Handle 'url' type entities (plain URLs in text)
+            if entity.type == "url" and message.text:
+                url = message.text[entity.offset:entity.offset + entity.length]
+            
+            # Handle 'text_link' type entities (hyperlinked text)
+            elif entity.type == "text_link" and entity.url:
+                url = entity.url
+            
+            # Check if extracted URL is a LinkedIn URL
+            if url and is_linkedin_url(url):
+                linkedin_urls.append(url)
+    
+    # Return unique URLs while preserving order
+    seen = set()
+    unique_urls = []
+    for url in linkedin_urls:
+        if url not in seen:
+            seen.add(url)
+            unique_urls.append(url)
+    
+    return unique_urls
 
 
 def is_linkedin_post(text: str) -> bool:

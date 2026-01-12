@@ -10,7 +10,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.database import get_session
-from bot.services.linkedin import extract_linkedin_urls
+from bot.services.linkedin import extract_linkedin_urls_from_message
 from bot.services.user import UserService
 from bot.services.karma import KarmaService
 from bot.database.repositories import UserKarmaRepository
@@ -147,7 +147,7 @@ async def handle_message(message: Message):
     """Handle incoming messages with LinkedIn URLs.
 
     When a message contains a LinkedIn URL:
-    1. Extract the LinkedIn URL
+    1. Extract the LinkedIn URL from text and message entities
     2. Get or create user
     3. Create post record
     4. Update user's first_post_at if NULL
@@ -157,11 +157,11 @@ async def handle_message(message: Message):
     Args:
         message: Incoming Telegram message
     """
-    if not message.text or not message.from_user or not message.chat:
+    if not message.from_user or not message.chat:
         return
 
-    # Check if message contains LinkedIn URL
-    linkedin_urls = extract_linkedin_urls(message.text)
+    # Check if message contains LinkedIn URL (from text or entities)
+    linkedin_urls = extract_linkedin_urls_from_message(message)
     if not linkedin_urls:
         return
     
