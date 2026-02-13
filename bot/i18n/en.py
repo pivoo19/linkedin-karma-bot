@@ -46,9 +46,9 @@ Available commands:
 /stats - Group statistics
 
 Admin commands:
-/set_language <ru|en> - Set group language
-/set_karma_period <days> - Set karma calculation period
-/set_veteran_threshold <number> - Set veteran status threshold
+/set_lang <ru|en> - Set group language
+/set_period <days> - Set karma calculation period
+/set_veteran <number> - Set veteran status threshold
 /set_post_cost <number> - Set post cost in karma points
 /reset_karma @username - Reset user's karma
 /export - Export statistics to CSV

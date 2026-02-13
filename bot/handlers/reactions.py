@@ -4,7 +4,7 @@ This module handles message_reaction updates and manages karma based on reaction
 """
 
 from aiogram import Router
-from aiogram.types import MessageReactionUpdated, ReactionTypeEmoji
+from aiogram.types import MessageReactionUpdated
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,25 +63,14 @@ async def handle_reaction(reaction_update: MessageReactionUpdated):
             last_name=reaction_update.user.last_name
         )
 
-        # Check if reactions were added or removed
-        old_reactions = set()
-        new_reactions = set()
+        # We track support as a boolean flag:
+        # user has at least one reaction on a post => supported.
+        # This avoids incorrect karma changes when user only changes emoji.
+        had_reaction = len(reaction_update.old_reaction) > 0
+        has_reaction = len(reaction_update.new_reaction) > 0
 
-        for reaction in reaction_update.old_reaction:
-            if isinstance(reaction, ReactionTypeEmoji):
-                old_reactions.add(reaction.emoji)
-
-        for reaction in reaction_update.new_reaction:
-            if isinstance(reaction, ReactionTypeEmoji):
-                new_reactions.add(reaction.emoji)
-
-        # Reactions added
-        added_reactions = new_reactions - old_reactions
-        # Reactions removed
-        removed_reactions = old_reactions - new_reactions
-
-        # Handle added reactions
-        if added_reactions:
+        # Handle support added (no reaction -> at least one reaction)
+        if not had_reaction and has_reaction:
             # Check if reaction already exists
             result = await session.execute(
                 select(Reaction).where(
@@ -110,8 +99,8 @@ async def handle_reaction(reaction_update: MessageReactionUpdated):
 
                 await session.commit()
 
-        # Handle removed reactions
-        if removed_reactions:
+        # Handle support removed (had reaction -> no reactions)
+        if had_reaction and not has_reaction:
             # Find and delete reaction
             result = await session.execute(
                 select(Reaction).where(

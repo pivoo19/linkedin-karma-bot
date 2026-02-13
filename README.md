@@ -98,15 +98,12 @@ linkedin-karma-bot/
    # Edit .env and add your Telegram bot token
    ```
 
-5. **Initialize the database**:
-   ```bash
-   alembic upgrade head
-   ```
-
-6. **Run the bot**:
+5. **Run the bot**:
    ```bash
    python -m bot.main
    ```
+
+   Database tables are created automatically on first startup.
 
 ### Docker Deployment (PostgreSQL)
 
@@ -157,15 +154,15 @@ Configuration is managed through environment variables. See `.env.example` for a
 - `/help` - Show help and available commands
 - `/karma` - View your current karma and statistics
 - `/top` - View top users by karma in this group
+- `/top_all` - View top users by total karma in this group
 - `/stats` - View group statistics
 
 ### Admin Commands
 
-- `/settings` - View current group settings
-- `/set_language <ru|en>` - Set group language
+- `/set_lang <ru|en>` - Set group language
 - `/set_period <days>` - Set karma calculation period
-- `/set_threshold <points>` - Set veteran threshold
-- `/set_cost <points>` - Set karma cost to post
+- `/set_veteran <points>` - Set veteran threshold
+- `/set_post_cost <points>` - Set karma cost to post
 - `/reset_karma @username` - Reset user's karma to zero
 - `/export` - Export group statistics as CSV file
 
@@ -177,8 +174,8 @@ Configuration is managed through environment variables. See `.env.example` for a
    - Post any LinkedIn URL (posts, articles, feed updates)
    - Other members can react to your post
    - Earn +1 karma for each reaction
-5. **View your karma**: Use `/karma` to see your current karma and status
-6. **Compete on the leaderboard**: Use `/top` to see who has the most karma
+4. **View your karma**: Use `/karma` to see your current karma and status
+5. **Compete on the leaderboard**: Use `/top` or `/top_all` to see who has the most karma
 
 ## Development
 
@@ -240,25 +237,11 @@ python scripts/simulator.py stats
 
 ### Database Migrations
 
-Create a new migration:
-```bash
-alembic revision --autogenerate -m "description of changes"
-```
+The current project initializes schema automatically on startup via SQLAlchemy:
 
-Apply migrations:
-```bash
-alembic upgrade head
-```
+- `bot/database/connection.py` -> `init_db()` -> `Base.metadata.create_all`
 
-Rollback migration:
-```bash
-alembic downgrade -1
-```
-
-View migration history:
-```bash
-alembic history
-```
+Migration scripts are stored in `migrations/versions/`.
 
 ## API Reference
 
