@@ -95,7 +95,6 @@ async def test_post_message_regular_includes_all_time_line(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert "🌱" not in reply_text
-    assert "🎖️" not in reply_text
     assert t("supported_all_time", lang="ru", count=7) in reply_text
 
 
