@@ -253,12 +253,16 @@ async def handle_message(message: Message):
 
         # Format response message based on user status using i18n
         # Format: "Per 7 days - Supported others: ⭐ (X) | Asked for support: Y"
-        stars = karma_service.karma_to_stars(weekly_karma)
-        karma_display = f"{stars} ({weekly_karma})" if stars else f"({weekly_karma})"
+        karma_display = str(weekly_karma)
         karma_repo = UserKarmaRepository(session)
         total_karma = await karma_repo.get_total_karma(
             user_id=user.telegram_id,
             chat_id=message.chat.id
+        )
+        all_time_display = t(
+            "supported_all_time",
+            lang=lang,
+            count=total_karma
         )
         
         if is_newcomer:
@@ -268,6 +272,7 @@ async def handle_message(message: Message):
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
+                all_time=all_time_display,
                 first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
@@ -278,8 +283,8 @@ async def handle_message(message: Message):
                 "post_veteran",
                 lang=lang,
                 username=username_display,
-                total_karma=total_karma,
                 karma=karma_display,
+                all_time=all_time_display,
                 first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
@@ -291,15 +296,11 @@ async def handle_message(message: Message):
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
+                all_time=all_time_display,
                 first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
-
-        response = (
-            f"{response}\n"
-            f"{t('supported_all_time', lang=lang, count=total_karma)}"
-        )
 
         await message.reply(response)
         try:

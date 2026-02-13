@@ -120,7 +120,7 @@ async def test_post_message_veteran_includes_all_time_line(
 
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
-    assert "🎖️ (50)" in reply_text
+    assert "🎖️50 - поддержал других за всё время" in reply_text
     assert t("supported_all_time", lang="ru", count=50) in reply_text
 
 

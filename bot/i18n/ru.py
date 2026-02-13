@@ -14,7 +14,7 @@ translations = {
     "your_karma": "Ваша карма",
     "weekly": "за неделю",
     "total": "всего",
-    "supported_all_time": "{count} — поддержал за всё время",
+    "supported_all_time": "{count} - поддержал других за всё время",
     "of_which_first_hour": "из них в первый час: {count}",
 
     # Leaderboard messages
@@ -84,9 +84,9 @@ translations = {
     "post_already_registered": "Этот пост уже зарегистрирован",
     "first_post": "Поздравляем с первым постом!",
     "not_enough_karma": "Недостаточно кармы для публикации. Нужно: {required}, у вас: {current}",
-    "post_newcomer": "📝 {username} 🌱 (впервые) просит поддержки\nЗа {period} дней - Поддержал других: {karma}\nИз них в первый час: {first_hour}\nПопросил поддержки: {posts}",
-    "post_veteran": "📝 {username} 🎖️ ({total_karma}) просит поддержки\nЗа {period} дней - Поддержал других: {karma}\nИз них в первый час: {first_hour}\nПопросил поддержки: {posts}",
-    "post_regular": "📝 {username} просит поддержки\nЗа {period} дней - Поддержал других: {karma}\nИз них в первый час: {first_hour}\nПопросил поддержки: {posts}",
+    "post_newcomer": "📝 {username} просит поддержки (🌱{all_time})\nЗа {period} дней\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
+    "post_veteran": "📝 {username} просит поддержки (🎖️{all_time})\nЗа {period} дней\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
+    "post_regular": "📝 {username} просит поддержки ({all_time})\nЗа {period} дней\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
 
     # Reaction messages
     "reaction_added": "Поддержка засчитана!",

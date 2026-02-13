@@ -14,7 +14,7 @@ translations = {
     "your_karma": "Your karma",
     "weekly": "weekly",
     "total": "total",
-    "supported_all_time": "{count} — supported all-time",
+    "supported_all_time": "{count} - supported others all-time",
     "of_which_first_hour": "of which in first hour: {count}",
 
     # Leaderboard messages
@@ -84,9 +84,9 @@ Good luck earning karma!
     "post_already_registered": "This post is already registered",
     "first_post": "Congratulations on your first post!",
     "not_enough_karma": "Not enough karma to post. Required: {required}, you have: {current}",
-    "post_newcomer": "📝 {username} 🌱 (first time) asks for support\nFor {period} days - Supported others: {karma}\nOf which in first hour: {first_hour}\nAsked for support: {posts}",
-    "post_veteran": "📝 {username} 🎖️ ({total_karma}) asks for support\nFor {period} days - Supported others: {karma}\nOf which in first hour: {first_hour}\nAsked for support: {posts}",
-    "post_regular": "📝 {username} asks for support\nFor {period} days - Supported others: {karma}\nOf which in first hour: {first_hour}\nAsked for support: {posts}",
+    "post_newcomer": "📝 {username} asks for support (🌱{all_time})\nFor {period} days\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_veteran": "📝 {username} asks for support (🎖️{all_time})\nFor {period} days\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_regular": "📝 {username} asks for support ({all_time})\nFor {period} days\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
 
     # Reaction messages
     "reaction_added": "Support counted!",
