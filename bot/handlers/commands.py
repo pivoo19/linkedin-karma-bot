@@ -150,6 +150,8 @@ async def cmd_karma(message: Message):
                 
                 # Get weekly karma for each chat
                 for chat_id, total_karma in user_karmas:
+                    total_karma_value = total_karma or 0
+
                     # Get chat settings for this group
                     chat_settings = await user_service.get_or_create_settings(chat_id)
                     
@@ -158,6 +160,15 @@ async def cmd_karma(message: Message):
                         user_id=target_user.telegram_id,
                         chat_id=chat_id,
                         period_days=chat_settings.karma_period_days
+                    )
+                    weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
+                        user_id=target_user.telegram_id,
+                        chat_id=chat_id,
+                        period_days=chat_settings.karma_period_days
+                    )
+                    total_first_hour = await karma_service.get_total_first_hour_karma(
+                        user_id=target_user.telegram_id,
+                        chat_id=chat_id
                     )
                     
                     stars = karma_service.karma_to_stars(weekly_karma)
@@ -173,7 +184,10 @@ async def cmd_karma(message: Message):
                     response += (
                         f"💬 {chat_name}:\n"
                         f"  {t('weekly', lang=lang)}: {karma_display}\n"
-                        f"  {t('total', lang=lang)}: {total_karma}\n\n"
+                        f"  {t('of_which_first_hour', lang=lang, count=weekly_first_hour)}\n"
+                        f"  {t('total', lang=lang)}: {total_karma_value}\n"
+                        f"  {t('supported_all_time', lang=lang, count=total_karma_value)}\n"
+                        f"  {t('of_which_first_hour', lang=lang, count=total_first_hour)}\n\n"
                     )
         else:
             # In groups, show karma for this group only
@@ -185,6 +199,15 @@ async def cmd_karma(message: Message):
                 user_id=target_user.telegram_id,
                 chat_id=message.chat.id,
                 period_days=settings.karma_period_days
+            )
+            weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
+                user_id=target_user.telegram_id,
+                chat_id=message.chat.id,
+                period_days=settings.karma_period_days
+            )
+            total_first_hour = await karma_service.get_total_first_hour_karma(
+                user_id=target_user.telegram_id,
+                chat_id=message.chat.id
             )
 
             # Get total karma for this chat
@@ -200,7 +223,10 @@ async def cmd_karma(message: Message):
             response = (
                 f"📊 {t('your_karma', lang=lang)} {username_display}\n\n"
                 f"{t('weekly', lang=lang)}: {karma_display}\n"
-                f"{t('total', lang=lang)}: {total_karma}"
+                f"{t('of_which_first_hour', lang=lang, count=weekly_first_hour)}\n"
+                f"{t('total', lang=lang)}: {total_karma}\n"
+                f"{t('supported_all_time', lang=lang, count=total_karma)}\n"
+                f"{t('of_which_first_hour', lang=lang, count=total_first_hour)}"
             )
 
         await message.reply(response)
@@ -299,8 +325,16 @@ async def cmd_top(message: Message):
                         
                         stars = karma_service.karma_to_stars(karma)
                         karma_display = f"{stars} ({karma})" if stars else str(karma)
+                        weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
+                            user_id=user_id,
+                            chat_id=chat_id,
+                            period_days=chat_settings.karma_period_days
+                        )
                         
-                        response += f"  {i}. {username_display}: {karma_display}\n"
+                        response += (
+                            f"  {i}. {username_display}: {karma_display} "
+                            f"({t('of_which_first_hour', lang=lang, count=weekly_first_hour)})\n"
+                        )
                     
                     response += "\n"
             
@@ -351,8 +385,16 @@ async def cmd_top(message: Message):
 
                 stars = karma_service.karma_to_stars(karma)
                 karma_display = f"{stars} ({karma})" if stars else str(karma)
+                weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
+                    user_id=user_id,
+                    chat_id=message.chat.id,
+                    period_days=settings.karma_period_days
+                )
 
-                response += f"{i}. {username_display}: {karma_display}\n"
+                response += (
+                    f"{i}. {username_display}: {karma_display} "
+                    f"({t('of_which_first_hour', lang=lang, count=weekly_first_hour)})\n"
+                )
 
             await message.reply(response)
 
@@ -372,6 +414,7 @@ async def cmd_top_all(message: Message):
 
     async with get_session() as session:
         user_service = UserService(session)
+        karma_service = KarmaService(session)
         
         # Check if it's a private message
         is_private = message.chat.type == "private"
@@ -433,7 +476,14 @@ async def cmd_top_all(message: Message):
                     for i, (telegram_id, username, display_name, karma) in enumerate(top_users, 1):
                         username_display = f"@{username}" if username else (display_name or "User")
                         karma_value = karma if karma is not None else 0
-                        response += f"  {i}. {username_display}: {karma_value}\n"
+                        total_first_hour = await karma_service.get_total_first_hour_karma(
+                            user_id=telegram_id,
+                            chat_id=chat_id
+                        )
+                        response += (
+                            f"  {i}. {username_display}: {karma_value} "
+                            f"({t('of_which_first_hour', lang=lang, count=total_first_hour)})\n"
+                        )
                     
                     response += "\n"
             
@@ -469,7 +519,14 @@ async def cmd_top_all(message: Message):
             for i, (telegram_id, username, display_name, karma) in enumerate(top_users, 1):
                 username_display = f"@{username}" if username else (display_name or "User")
                 karma_value = karma if karma is not None else 0
-                response += f"{i}. {username_display}: {karma_value}\n"
+                total_first_hour = await karma_service.get_total_first_hour_karma(
+                    user_id=telegram_id,
+                    chat_id=message.chat.id
+                )
+                response += (
+                    f"{i}. {username_display}: {karma_value} "
+                    f"({t('of_which_first_hour', lang=lang, count=total_first_hour)})\n"
+                )
 
             await message.reply(response)
 
@@ -536,10 +593,12 @@ async def cmd_stats(message: Message):
                 response += (
                     f"  {t('total_users', lang=lang)}: {stats['total_users']}\n"
                     f"  {t('total_posts', lang=lang)}: {stats['total_posts']}\n"
-                    f"  {t('total_reactions', lang=lang)}: {stats['total_reactions']}\n"
+                    f"  {t('total_reactions', lang=lang)}: {stats['total_reactions']} "
+                    f"({t('of_which_first_hour', lang=lang, count=stats['total_first_hour_reactions'])})\n"
                     f"  {t('per_week', lang=lang)}:\n"
                     f"    {t('posts', lang=lang)}: {stats['weekly_posts']}\n"
-                    f"    {t('support', lang=lang)}: {stats['weekly_reactions']}\n\n"
+                    f"    {t('support', lang=lang)}: {stats['weekly_reactions']} "
+                    f"({t('of_which_first_hour', lang=lang, count=stats['weekly_first_hour_reactions'])})\n\n"
                 )
             
             await message.reply(response)
@@ -556,10 +615,12 @@ async def cmd_stats(message: Message):
                 f"📈 {t('stats_title', lang=lang)}\n\n"
                 f"{t('total_users', lang=lang)}: {stats['total_users']}\n"
                 f"{t('total_posts', lang=lang)}: {stats['total_posts']}\n"
-                f"{t('total_reactions', lang=lang)}: {stats['total_reactions']}\n\n"
+                f"{t('total_reactions', lang=lang)}: {stats['total_reactions']} "
+                f"({t('of_which_first_hour', lang=lang, count=stats['total_first_hour_reactions'])})\n\n"
                 f"{t('per_week', lang=lang)}:\n"
                 f"{t('posts', lang=lang)}: {stats['weekly_posts']}\n"
-                f"{t('support', lang=lang)}: {stats['weekly_reactions']}"
+                f"{t('support', lang=lang)}: {stats['weekly_reactions']} "
+                f"({t('of_which_first_hour', lang=lang, count=stats['weekly_first_hour_reactions'])})"
             )
 
             await message.reply(response)

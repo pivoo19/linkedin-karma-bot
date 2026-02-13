@@ -7,10 +7,11 @@ including user counts, post counts, and reaction metrics.
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-from sqlalchemy import select, func, union_all, distinct
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.models import Post, Reaction
+from bot.services.karma import KarmaService
 
 
 class StatsService:
@@ -27,6 +28,28 @@ class StatsService:
             session: Async database session for executing queries
         """
         self.session = session
+
+    async def _count_first_hour_reactions(
+        self,
+        chat_id: int,
+        cutoff_date: datetime | None = None
+    ) -> int:
+        """Count reactions on chat posts that were made in first hour."""
+        query = (
+            select(Reaction.created_at, Post.created_at)
+            .join(Post, Reaction.post_id == Post.id)
+            .where(Post.chat_id == chat_id)
+        )
+        if cutoff_date is not None:
+            query = query.where(Reaction.created_at >= cutoff_date)
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        return sum(
+            1 for reaction_time, post_time in rows
+            if KarmaService.is_within_first_hour(reaction_time, post_time)
+        )
 
     async def get_group_stats(self, chat_id: int) -> Dict[str, Any]:
         """Get comprehensive statistics for a specific group.
@@ -109,10 +132,17 @@ class StatsService:
         weekly_reactions_result = await self.session.execute(weekly_reactions_query)
         weekly_reactions = weekly_reactions_result.scalar_one() or 0
 
+        total_first_hour_reactions = await self._count_first_hour_reactions(chat_id)
+        weekly_first_hour_reactions = await self._count_first_hour_reactions(
+            chat_id, cutoff_date=cutoff_date
+        )
+
         return {
             "total_users": total_users,
             "total_posts": total_posts,
             "total_reactions": total_reactions,
+            "total_first_hour_reactions": total_first_hour_reactions,
             "weekly_posts": weekly_posts,
             "weekly_reactions": weekly_reactions,
+            "weekly_first_hour_reactions": weekly_first_hour_reactions,
         }

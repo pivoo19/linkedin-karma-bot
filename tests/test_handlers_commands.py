@@ -1,6 +1,7 @@
 """Tests for command handlers access rules and key flows."""
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.handlers import commands as commands_handler
 from bot.i18n import t
+from bot.models import GroupSettings, User, UserKarma
 
 
 @pytest.fixture
@@ -99,6 +101,8 @@ async def test_group_commands_work_for_admin_with_empty_data(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert expected_text in reply_text
+    if handler is commands_handler.cmd_stats:
+        assert t("of_which_first_hour", lang="ru", count=0) in reply_text
 
 
 async def test_group_karma_works_for_admin(
@@ -118,8 +122,15 @@ async def test_group_karma_works_for_admin(
 
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
-    assert t("admin_only", lang="ru") not in reply_text
-    assert t("your_karma", lang="ru") in reply_text
+    expected_response = (
+        f"📊 {t('your_karma', lang='ru')} @tester\n\n"
+        f"{t('weekly', lang='ru')}: 0\n"
+        f"{t('of_which_first_hour', lang='ru', count=0)}\n"
+        f"{t('total', lang='ru')}: 0\n"
+        f"{t('supported_all_time', lang='ru', count=0)}\n"
+        f"{t('of_which_first_hour', lang='ru', count=0)}"
+    )
+    assert reply_text == expected_response
 
 
 async def test_private_karma_bypasses_admin_check(
@@ -142,3 +153,86 @@ async def test_private_karma_bypasses_admin_check(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert t("no_data", lang="ru") in reply_text
+
+
+async def test_private_karma_includes_all_time_support_for_each_chat(
+    patch_commands_session: AsyncSession,
+    monkeypatch,
+):
+    """Private /karma should show explicit all-time support line in chat block."""
+    monkeypatch.setattr(commands_handler, "is_admin", AsyncMock(return_value=False))
+
+    user = User(
+        telegram_id=111,
+        username="tester",
+        display_name="Test User",
+        first_post_at=datetime.utcnow(),
+    )
+    user_karma = UserKarma(user_id=111, chat_id=-1001234567890, karma_total=7)
+    settings = GroupSettings(chat_id=-1001234567890, language="ru")
+    patch_commands_session.add_all([user, user_karma, settings])
+    await patch_commands_session.commit()
+
+    message = make_message(
+        text="/karma",
+        chat_type="private",
+        chat_id=111,
+    )
+    message.bot.get_chat = AsyncMock(
+        return_value=SimpleNamespace(title="Test Group")
+    )
+
+    await commands_handler.cmd_karma(message)
+
+    message.reply.assert_awaited_once()
+    reply_text = message.reply.await_args.args[0]
+    expected_response = (
+        f"📊 {t('your_karma', lang='ru')} @tester\n\n"
+        f"💬 Test Group:\n"
+        f"  {t('weekly', lang='ru')}: 0\n"
+        f"  {t('of_which_first_hour', lang='ru', count=0)}\n"
+        f"  {t('total', lang='ru')}: 7\n"
+        f"  {t('supported_all_time', lang='ru', count=7)}\n"
+        f"  {t('of_which_first_hour', lang='ru', count=0)}\n\n"
+    )
+    assert reply_text == expected_response
+
+
+async def test_group_karma_english_includes_full_format(
+    patch_commands_session: AsyncSession,
+    monkeypatch,
+):
+    """Group /karma should include weekly + total + all-time in English."""
+    monkeypatch.setattr(commands_handler, "is_admin", AsyncMock(return_value=True))
+
+    user = User(
+        telegram_id=222,
+        username="tester",
+        display_name="Test User",
+        first_post_at=datetime.utcnow(),
+    )
+    user_karma = UserKarma(user_id=222, chat_id=-1001234567890, karma_total=5)
+    settings = GroupSettings(chat_id=-1001234567890, language="en")
+    patch_commands_session.add_all([user, user_karma, settings])
+    await patch_commands_session.commit()
+
+    message = make_message(
+        text="/karma",
+        chat_type="supergroup",
+        chat_id=-1001234567890,
+        user_id=222,
+    )
+
+    await commands_handler.cmd_karma(message)
+
+    message.reply.assert_awaited_once()
+    reply_text = message.reply.await_args.args[0]
+    expected_response = (
+        f"📊 {t('your_karma', lang='en')} @tester\n\n"
+        f"{t('weekly', lang='en')}: 0\n"
+        f"{t('of_which_first_hour', lang='en', count=0)}\n"
+        f"{t('total', lang='en')}: 5\n"
+        f"{t('supported_all_time', lang='en', count=5)}\n"
+        f"{t('of_which_first_hour', lang='en', count=0)}"
+    )
+    assert reply_text == expected_response

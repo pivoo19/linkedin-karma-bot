@@ -233,6 +233,11 @@ async def handle_message(message: Message):
             chat_id=message.chat.id,
             period_days=settings.karma_period_days
         )
+        weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
+            user_id=user.telegram_id,
+            chat_id=message.chat.id,
+            period_days=settings.karma_period_days
+        )
 
         # Check veteran status
         is_veteran = await karma_service.is_veteran(
@@ -250,6 +255,11 @@ async def handle_message(message: Message):
         # Format: "Per 7 days - Supported others: ⭐ (X) | Asked for support: Y"
         stars = karma_service.karma_to_stars(weekly_karma)
         karma_display = f"{stars} ({weekly_karma})" if stars else f"({weekly_karma})"
+        karma_repo = UserKarmaRepository(session)
+        total_karma = await karma_repo.get_total_karma(
+            user_id=user.telegram_id,
+            chat_id=message.chat.id
+        )
         
         if is_newcomer:
             # Newcomer: "📝 @username 🌱 asks for support\nPer 7 days - Supported others: (0) | Asked for support: 1"
@@ -258,22 +268,19 @@ async def handle_message(message: Message):
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
+                first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
         elif is_veteran:
             # Veteran: "📝 @username 🎖️ (47) asks for support\nPer 7 days - Supported others: ⭐⭐ (4) | Asked for support: 1"
-            karma_repo = UserKarmaRepository(session)
-            total_karma = await karma_repo.get_total_karma(
-                user_id=user.telegram_id,
-                chat_id=message.chat.id
-            )
             response = t(
                 "post_veteran",
                 lang=lang,
                 username=username_display,
                 total_karma=total_karma,
                 karma=karma_display,
+                first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
@@ -284,9 +291,15 @@ async def handle_message(message: Message):
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
+                first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
+
+        response = (
+            f"{response}\n"
+            f"{t('supported_all_time', lang=lang, count=total_karma)}"
+        )
 
         await message.reply(response)
         try:

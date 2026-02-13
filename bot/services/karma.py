@@ -4,7 +4,7 @@ This module provides the KarmaService class which handles all karma-related
 operations including retrieving karma stats, post counts, and user status checks.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import select, func
@@ -64,6 +64,24 @@ class KarmaService:
         result = await self.session.execute(query)
         return result.scalar_one() or 0
 
+    @staticmethod
+    def _to_utc_naive(dt: datetime) -> datetime:
+        """Normalize datetime to naive UTC for safe arithmetic."""
+        if dt.tzinfo is None:
+            return dt
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+    @classmethod
+    def is_within_first_hour(cls, reaction_time: datetime, post_time: datetime) -> bool:
+        """Check if reaction happened within first hour after post publication."""
+        if reaction_time is None or post_time is None:
+            return False
+
+        reaction_utc = cls._to_utc_naive(reaction_time)
+        post_utc = cls._to_utc_naive(post_time)
+        delta_seconds = (reaction_utc - post_utc).total_seconds()
+        return 0 <= delta_seconds <= 3600
+
     async def get_total_karma(self, user_id: int, chat_id: Optional[int] = None) -> int:
         """Get user's total karma.
 
@@ -113,6 +131,54 @@ class KarmaService:
 
         result = await self.session.execute(query)
         return result.scalar_one() or 0
+
+    async def get_weekly_first_hour_karma(
+        self,
+        user_id: int,
+        chat_id: int,
+        period_days: int = 7
+    ) -> int:
+        """Count unique supported posts in period where support was in first hour."""
+        cutoff_date = datetime.utcnow() - timedelta(days=period_days)
+
+        query = (
+            select(Reaction.post_id, Reaction.created_at, Post.created_at)
+            .join(Post, Reaction.post_id == Post.id)
+            .where(
+                Reaction.user_id == user_id,
+                Post.chat_id == chat_id,
+                Reaction.created_at >= cutoff_date
+            )
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        unique_post_ids = {
+            post_id for post_id, reaction_time, post_time in rows
+            if self.is_within_first_hour(reaction_time, post_time)
+        }
+        return len(unique_post_ids)
+
+    async def get_total_first_hour_karma(self, user_id: int, chat_id: int) -> int:
+        """Count unique supported posts where support was in first hour (all-time)."""
+        query = (
+            select(Reaction.post_id, Reaction.created_at, Post.created_at)
+            .join(Post, Reaction.post_id == Post.id)
+            .where(
+                Reaction.user_id == user_id,
+                Post.chat_id == chat_id
+            )
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        unique_post_ids = {
+            post_id for post_id, reaction_time, post_time in rows
+            if self.is_within_first_hour(reaction_time, post_time)
+        }
+        return len(unique_post_ids)
 
     async def is_newcomer(self, user_id: int) -> bool:
         """Check if a user is a newcomer (has never posted before).

@@ -167,3 +167,96 @@ class TestKarmaService:
         )
         # Should not include the old post
         assert count == 0
+
+    async def test_get_total_first_hour_karma_counts_only_first_hour_supports(
+        self, async_session: AsyncSession, sample_user: User, sample_user_2: User
+    ):
+        """All-time first-hour karma should include only supports made in first hour."""
+        post1_time = datetime.utcnow() - timedelta(days=1)
+        post2_time = datetime.utcnow() - timedelta(days=1)
+
+        post1 = Post(
+            message_id=3001,
+            chat_id=-1001234567890,
+            author_id=sample_user.telegram_id,
+            linkedin_url="https://linkedin.com/posts/first-hour-post",
+            created_at=post1_time,
+        )
+        post2 = Post(
+            message_id=3002,
+            chat_id=-1001234567890,
+            author_id=sample_user.telegram_id,
+            linkedin_url="https://linkedin.com/posts/late-support-post",
+            created_at=post2_time,
+        )
+        async_session.add_all([post1, post2])
+        await async_session.commit()
+        await async_session.refresh(post1)
+        await async_session.refresh(post2)
+
+        reaction_in_hour = Reaction(
+            post_id=post1.id,
+            user_id=sample_user_2.telegram_id,
+            created_at=post1_time + timedelta(minutes=45),
+        )
+        reaction_late = Reaction(
+            post_id=post2.id,
+            user_id=sample_user_2.telegram_id,
+            created_at=post2_time + timedelta(hours=2),
+        )
+        async_session.add_all([reaction_in_hour, reaction_late])
+        await async_session.commit()
+
+        service = KarmaService(async_session)
+        first_hour_total = await service.get_total_first_hour_karma(
+            user_id=sample_user_2.telegram_id,
+            chat_id=-1001234567890,
+        )
+        assert first_hour_total == 1
+
+    async def test_get_weekly_first_hour_karma_respects_period(
+        self, async_session: AsyncSession, sample_user: User, sample_user_2: User
+    ):
+        """Weekly first-hour karma should ignore supports older than period."""
+        recent_post_time = datetime.utcnow() - timedelta(days=2)
+        old_post_time = datetime.utcnow() - timedelta(days=10)
+
+        recent_post = Post(
+            message_id=4001,
+            chat_id=-1001234567890,
+            author_id=sample_user.telegram_id,
+            linkedin_url="https://linkedin.com/posts/recent-post",
+            created_at=recent_post_time,
+        )
+        old_post = Post(
+            message_id=4002,
+            chat_id=-1001234567890,
+            author_id=sample_user.telegram_id,
+            linkedin_url="https://linkedin.com/posts/old-post",
+            created_at=old_post_time,
+        )
+        async_session.add_all([recent_post, old_post])
+        await async_session.commit()
+        await async_session.refresh(recent_post)
+        await async_session.refresh(old_post)
+
+        recent_reaction = Reaction(
+            post_id=recent_post.id,
+            user_id=sample_user_2.telegram_id,
+            created_at=recent_post_time + timedelta(minutes=20),
+        )
+        old_reaction = Reaction(
+            post_id=old_post.id,
+            user_id=sample_user_2.telegram_id,
+            created_at=old_post_time + timedelta(minutes=15),
+        )
+        async_session.add_all([recent_reaction, old_reaction])
+        await async_session.commit()
+
+        service = KarmaService(async_session)
+        weekly_first_hour = await service.get_weekly_first_hour_karma(
+            user_id=sample_user_2.telegram_id,
+            chat_id=-1001234567890,
+            period_days=7,
+        )
+        assert weekly_first_hour == 1
