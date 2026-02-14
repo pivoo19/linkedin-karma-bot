@@ -173,7 +173,7 @@ async def test_notify_users_includes_group_title_when_present(
 
     bot.send_message.assert_awaited_once()
     sent_text = bot.send_message.await_args.kwargs["text"]
-    assert "Группа: Моя группа" in sent_text
+    assert '"Моя группа"' in sent_text
 
 
 async def test_notify_users_omits_group_title_when_absent(
@@ -200,4 +200,4 @@ async def test_notify_users_omits_group_title_when_absent(
 
     bot.send_message.assert_awaited_once()
     sent_text = bot.send_message.await_args.kwargs["text"]
-    assert "Группа:" not in sent_text
+    assert "🏷️" not in sent_text

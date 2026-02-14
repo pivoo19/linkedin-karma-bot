@@ -125,6 +125,6 @@ translations = {
     
     # Admin notifications
     "admin_notification": "🔔 Новый запрос на поддержку\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
-    "group_name_block": "\n🏷️ Группа: {title}",
+    "group_name_block": " \"{title}\"",
     "user_notification": "🔔 Новый пост в группе{group_name_block}\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
 }

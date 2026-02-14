@@ -125,6 +125,6 @@ Available commands:
     
     # Admin notifications
     "admin_notification": "🔔 New help request\n\n{response}\n\n📎 Message link: {message_link}",
-    "group_name_block": "\n🏷️ Group: {title}",
+    "group_name_block": " \"{title}\"",
     "user_notification": "🔔 New post in group{group_name_block}\n\n{response}\n\n📎 Message link: {message_link}",
 }
