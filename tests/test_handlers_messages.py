@@ -147,3 +147,57 @@ async def test_post_message_english_includes_all_time_line(
     reply_text = message.reply.await_args.args[0]
     assert t("asks_support", lang="en") in reply_text
     assert t("supported_all_time", lang="en", count=5) in reply_text
+
+
+async def test_notify_users_includes_group_title_when_present(
+    monkeypatch,
+    async_session: AsyncSession,
+):
+    """Personal notifications should include group title when it's available."""
+    monkeypatch.setattr(
+        messages_handler,
+        "get_chat_users",
+        AsyncMock(return_value=[111]),
+    )
+    bot = SimpleNamespace(send_message=AsyncMock())
+
+    await messages_handler.notify_users(
+        bot=bot,
+        session=async_session,
+        chat_id=-1001234567890,
+        response_text="response",
+        message_link="https://t.me/c/123/1",
+        lang="ru",
+        chat_title="Моя группа",
+    )
+
+    bot.send_message.assert_awaited_once()
+    sent_text = bot.send_message.await_args.kwargs["text"]
+    assert "Группа: Моя группа" in sent_text
+
+
+async def test_notify_users_omits_group_title_when_absent(
+    monkeypatch,
+    async_session: AsyncSession,
+):
+    """Personal notifications should not include group title line when title is empty."""
+    monkeypatch.setattr(
+        messages_handler,
+        "get_chat_users",
+        AsyncMock(return_value=[111]),
+    )
+    bot = SimpleNamespace(send_message=AsyncMock())
+
+    await messages_handler.notify_users(
+        bot=bot,
+        session=async_session,
+        chat_id=-1001234567890,
+        response_text="response",
+        message_link="https://t.me/c/123/1",
+        lang="ru",
+        chat_title=None,
+    )
+
+    bot.send_message.assert_awaited_once()
+    sent_text = bot.send_message.await_args.kwargs["text"]
+    assert "Группа:" not in sent_text

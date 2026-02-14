@@ -84,9 +84,9 @@ Good luck earning karma!
     "post_already_registered": "This post is already registered",
     "first_post": "Congratulations on your first post!",
     "not_enough_karma": "Not enough karma to post. Required: {required}, you have: {current}",
-    "post_newcomer": "📝 {username} asks for support (🌱{all_time})\nFor {period} days\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
-    "post_veteran": "📝 {username} asks for support ({all_time})\nFor {period} days\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
-    "post_regular": "📝 {username} asks for support ({all_time})\nFor {period} days\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_newcomer": "📝 {username} asks for support (🌱{all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_veteran": "📝 {username} asks for support ({all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_regular": "📝 {username} asks for support ({all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
 
     # Reaction messages
     "reaction_added": "Support counted!",
@@ -125,5 +125,6 @@ Available commands:
     
     # Admin notifications
     "admin_notification": "🔔 New help request\n\n{response}\n\n📎 Message link: {message_link}",
-    "user_notification": "🔔 New post in group\n\n{response}\n\n📎 Message link: {message_link}",
+    "group_name_block": "\n🏷️ Group: {title}",
+    "user_notification": "🔔 New post in group{group_name_block}\n\n{response}\n\n📎 Message link: {message_link}",
 }

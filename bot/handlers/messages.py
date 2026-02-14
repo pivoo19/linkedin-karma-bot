@@ -105,7 +105,8 @@ async def notify_users(
     chat_id: int,
     response_text: str,
     message_link: str,
-    lang: str
+    lang: str,
+    chat_title: str | None = None,
 ) -> None:
     """Send notification to all chat users about a new LinkedIn post.
     
@@ -116,17 +117,27 @@ async def notify_users(
         response_text: The response text that was sent to the group
         message_link: Link to the message in the group
         lang: Language code for the notification
+        chat_title: Optional group title to include in personal notification
     """
     try:
         user_ids = await get_chat_users(session, chat_id)
         if not user_ids:
             return
 
+        group_name_block = ""
+        if chat_title:
+            group_name_block = t(
+                "group_name_block",
+                lang=lang,
+                title=chat_title
+            )
+
         notification_text = t(
             "user_notification",
             lang=lang,
             response=response_text,
-            message_link=message_link
+            message_link=message_link,
+            group_name_block=group_name_block,
         )
 
         for user_id in user_ids:
@@ -311,7 +322,8 @@ async def handle_message(message: Message):
                 chat_id=message.chat.id,
                 response_text=response,
                 message_link=message_link,
-                lang=lang
+                lang=lang,
+                chat_title=getattr(message.chat, "title", None),
             )
         except Exception as e:
             logger.error(f"Error in notification process: {e}", exc_info=True)

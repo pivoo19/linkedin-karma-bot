@@ -84,9 +84,9 @@ translations = {
     "post_already_registered": "Этот пост уже зарегистрирован",
     "first_post": "Поздравляем с первым постом!",
     "not_enough_karma": "Недостаточно кармы для публикации. Нужно: {required}, у вас: {current}",
-    "post_newcomer": "📝 {username} просит поддержки (🌱{all_time})\nЗа {period} дней\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
-    "post_veteran": "📝 {username} просит поддержки ({all_time})\nЗа {period} дней\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
-    "post_regular": "📝 {username} просит поддержки ({all_time})\nЗа {period} дней\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
+    "post_newcomer": "📝 {username} просит поддержки (🌱{all_time})\nЗа последние {period} дней:\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
+    "post_veteran": "📝 {username} просит поддержки ({all_time})\nЗа последние {period} дней:\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
+    "post_regular": "📝 {username} просит поддержки ({all_time})\nЗа последние {period} дней:\n🙌 Поддержал других: {karma}\n🚀 Из них в первый час: {first_hour}\n🤝 Попросил поддержки: {posts}",
 
     # Reaction messages
     "reaction_added": "Поддержка засчитана!",
@@ -125,5 +125,6 @@ translations = {
     
     # Admin notifications
     "admin_notification": "🔔 Новый запрос на поддержку\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
-    "user_notification": "🔔 Новый пост в группе\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
+    "group_name_block": "\n🏷️ Группа: {title}",
+    "user_notification": "🔔 Новый пост в группе{group_name_block}\n\n{response}\n\n📎 Ссылка на сообщение: {message_link}",
 }
