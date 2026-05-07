@@ -3,13 +3,11 @@
 This module handles user commands like /karma, /top, /stats, and /help.
 """
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy import select, func, and_, distinct
 from datetime import datetime, timedelta
-
-from sqlalchemy import select
 
 from bot.config import get_settings
 from bot.database import get_session
@@ -649,86 +647,106 @@ async def cmd_stats(message: Message):
             await message.reply(response)
 
 
+async def _reach_stats_text(bot, session, target_chat_id: int) -> str:
+    """Build reach stats text for a given chat."""
+    try:
+        chat = await bot.get_chat(target_chat_id)
+        chat_name = chat.title or str(target_chat_id)
+    except Exception:
+        chat_name = str(target_chat_id)
+
+    from bot.handlers.messages import get_chat_users
+    user_ids = await get_chat_users(session, target_chat_id)
+
+    if not user_ids:
+        return f"Нет данных по группе {chat_name}"
+
+    result = await session.execute(
+        select(User).where(User.telegram_id.in_(user_ids))
+    )
+    users = result.scalars().all()
+
+    started = [u for u in users if u.bot_started_at is not None]
+    active = [u for u in users if u.bot_active]
+    blocked = [u for u in users if u.bot_started_at is not None and not u.bot_active]
+    never = [u for u in users if u.bot_started_at is None]
+
+    def _name(u: User) -> str:
+        return f"@{u.username}" if u.username else (u.display_name or f"id:{u.telegram_id}")
+
+    def _date(dt) -> str:
+        return dt.strftime("%d.%m.%Y") if dt else "никогда"
+
+    lines = [
+        f"📡 Охват уведомлений: {chat_name}\n",
+        f"Всего участников: {len(users)}",
+        f"Запустили бота: {len(started)}",
+        f"Получают сообщения: {len(active)}",
+        f"Заблокировали: {len(blocked)}",
+        f"Не запускали бота: {len(never)}",
+    ]
+
+    if blocked:
+        lines.append("\n🚫 Заблокировали бота:")
+        for u in sorted(blocked, key=lambda x: x.bot_last_message_at or datetime.min, reverse=True):
+            lines.append(f"• {_name(u)} (последнее: {_date(u.bot_last_message_at)})")
+
+    return "\n".join(lines)
+
+
+def _is_superadmin(user_id: int) -> bool:
+    return user_id == get_settings().superadmin_id
+
+
 @router.message(Command("reach"))
 async def cmd_reach(message: Message):
-    """Show bot delivery reach stats for a group (superadmin only, private chat).
-
-    Usage: /reach <chat_id>
-    """
+    """Show group picker for reach stats (superadmin only, private chat)."""
     if not message.from_user or not message.chat:
         return
-
-    if message.chat.type != "private":
-        return
-
-    settings = get_settings()
-    if message.from_user.id != settings.superadmin_id:
-        return
-
-    parts = message.text.split() if message.text else []
-    if len(parts) < 2:
-        await message.reply("Использование: /reach <chat_id>")
-        return
-
-    try:
-        target_chat_id = int(parts[1])
-    except ValueError:
-        await message.reply("❌ chat_id должен быть числом")
+    if message.chat.type != "private" or not _is_superadmin(message.from_user.id):
         return
 
     async with get_session() as session:
-        # Resolve group title
-        try:
-            chat = await message.bot.get_chat(target_chat_id)
-            chat_name = chat.title or str(target_chat_id)
-        except Exception:
-            chat_name = str(target_chat_id)
-
-        # Get all user IDs who interacted with this chat
-        from bot.handlers.messages import get_chat_users
-        user_ids = await get_chat_users(session, target_chat_id)
-
-        if not user_ids:
-            await message.reply(f"Нет данных по группе {chat_name}")
-            return
-
-        # Load user records
+        # Find all chats that have posts
         result = await session.execute(
-            select(User).where(User.telegram_id.in_(user_ids))
+            select(Post.chat_id).distinct()
         )
-        users = result.scalars().all()
+        chat_ids = [row[0] for row in result.all()]
 
-        total = len(users)
-        started = [u for u in users if u.bot_started_at is not None]
-        active = [u for u in users if u.bot_active]
-        blocked = [u for u in users if u.bot_started_at is not None and not u.bot_active]
-        never = [u for u in users if u.bot_started_at is None]
+    if not chat_ids:
+        await message.reply("Нет групп с данными.")
+        return
 
-        def _name(u: User) -> str:
-            if u.username:
-                return f"@{u.username}"
-            return u.display_name or f"id:{u.telegram_id}"
+    buttons = []
+    for chat_id in chat_ids:
+        try:
+            chat = await message.bot.get_chat(chat_id)
+            label = chat.title or str(chat_id)
+        except Exception:
+            label = str(chat_id)
+        buttons.append([InlineKeyboardButton(
+            text=label,
+            callback_data=f"reach:{chat_id}"
+        )])
 
-        def _date(dt) -> str:
-            if dt is None:
-                return "никогда"
-            return dt.strftime("%d.%m.%Y")
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    await message.reply("Выберите группу:", reply_markup=keyboard)
 
-        lines = [
-            f"📡 Охват уведомлений: {chat_name}\n",
-            f"Всего участников: {total}",
-            f"Запустили бота: {len(started)}",
-            f"Получают сообщения: {len(active)}",
-            f"Заблокировали: {len(blocked)}",
-            f"Не запускали бота: {len(never)}",
-        ]
 
-        if blocked:
-            lines.append("\n🚫 Заблокировали бота:")
-            for u in sorted(blocked, key=lambda x: x.bot_last_message_at or datetime.min, reverse=True):
-                lines.append(f"• {_name(u)} (последнее: {_date(u.bot_last_message_at)})")
+@router.callback_query(F.data.startswith("reach:"))
+async def cb_reach(callback: CallbackQuery):
+    """Handle group selection for /reach."""
+    if not callback.from_user or not _is_superadmin(callback.from_user.id):
+        await callback.answer()
+        return
 
-        await message.reply("\n".join(lines))
+    target_chat_id = int(callback.data.split(":", 1)[1])
+
+    async with get_session() as session:
+        text = await _reach_stats_text(callback.bot, session, target_chat_id)
+
+    await callback.message.edit_text(text)
+    await callback.answer()
 
 
 @router.message(Command("help"))
