@@ -156,6 +156,26 @@ class UserService:
         )
         return result.scalar_one_or_none()
 
+    async def mark_bot_started(self, user_id: int) -> None:
+        """Record that the user started the bot in private chat."""
+        user = await self.get_user_by_id(user_id)
+        if user:
+            user.bot_started_at = user.bot_started_at or datetime.utcnow()
+            user.bot_active = True
+            await self.session.commit()
+
+    async def update_bot_delivery(self, user_id: int, success: bool) -> None:
+        """Update bot delivery status after a send attempt."""
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            return
+        if success:
+            user.bot_active = True
+            user.bot_last_message_at = datetime.utcnow()
+        else:
+            user.bot_active = False
+        await self.session.commit()
+
     async def reset_user_karma(self, user: User) -> None:
         """Reset user's karma to zero.
 

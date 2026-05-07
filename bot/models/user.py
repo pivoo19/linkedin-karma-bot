@@ -4,7 +4,7 @@ User model for storing Telegram user information and karma.
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import BigInteger, Integer, String, DateTime, func
+from sqlalchemy import BigInteger, Boolean, Integer, String, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -62,6 +62,27 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
         doc="When the user made their first post (NULL means newcomer)"
+    )
+
+    # Bot delivery tracking
+    bot_started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="When the user sent /start to the bot in private"
+    )
+
+    bot_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+        doc="Whether the bot can currently deliver messages to this user"
+    )
+
+    bot_last_message_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="When the last message was successfully delivered to this user"
     )
 
     # Karma

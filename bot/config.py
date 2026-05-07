@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     default_veteran_threshold: int = Field(default=30, description="Default veteran threshold")
     default_post_cost: int = Field(default=0, description="Default post cost in karma points")
 
+    # Superadmin
+    superadmin_id: int = Field(default=0, description="Telegram user ID of the superadmin")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

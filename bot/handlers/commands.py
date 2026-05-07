@@ -9,6 +9,9 @@ from aiogram.types import Message
 from sqlalchemy import select, func, and_, distinct
 from datetime import datetime, timedelta
 
+from sqlalchemy import select
+
+from bot.config import get_settings
 from bot.database import get_session
 from bot.models import User, Reaction, Post, UserKarma
 from bot.services.user import UserService
@@ -50,6 +53,7 @@ async def cmd_start(message: Message):
                 first_name=message.from_user.first_name,
                 last_name=message.from_user.last_name
             )
+            await user_service.mark_bot_started(message.from_user.id)
 
             welcome_text = t("welcome", lang=lang) + "\n\n" + t("commands_list", lang=lang)
             await message.reply(welcome_text)
@@ -643,6 +647,88 @@ async def cmd_stats(message: Message):
             )
 
             await message.reply(response)
+
+
+@router.message(Command("reach"))
+async def cmd_reach(message: Message):
+    """Show bot delivery reach stats for a group (superadmin only, private chat).
+
+    Usage: /reach <chat_id>
+    """
+    if not message.from_user or not message.chat:
+        return
+
+    if message.chat.type != "private":
+        return
+
+    settings = get_settings()
+    if message.from_user.id != settings.superadmin_id:
+        return
+
+    parts = message.text.split() if message.text else []
+    if len(parts) < 2:
+        await message.reply("Использование: /reach <chat_id>")
+        return
+
+    try:
+        target_chat_id = int(parts[1])
+    except ValueError:
+        await message.reply("❌ chat_id должен быть числом")
+        return
+
+    async with get_session() as session:
+        # Resolve group title
+        try:
+            chat = await message.bot.get_chat(target_chat_id)
+            chat_name = chat.title or str(target_chat_id)
+        except Exception:
+            chat_name = str(target_chat_id)
+
+        # Get all user IDs who interacted with this chat
+        from bot.handlers.messages import get_chat_users
+        user_ids = await get_chat_users(session, target_chat_id)
+
+        if not user_ids:
+            await message.reply(f"Нет данных по группе {chat_name}")
+            return
+
+        # Load user records
+        result = await session.execute(
+            select(User).where(User.telegram_id.in_(user_ids))
+        )
+        users = result.scalars().all()
+
+        total = len(users)
+        started = [u for u in users if u.bot_started_at is not None]
+        active = [u for u in users if u.bot_active]
+        blocked = [u for u in users if u.bot_started_at is not None and not u.bot_active]
+        never = [u for u in users if u.bot_started_at is None]
+
+        def _name(u: User) -> str:
+            if u.username:
+                return f"@{u.username}"
+            return u.display_name or f"id:{u.telegram_id}"
+
+        def _date(dt) -> str:
+            if dt is None:
+                return "никогда"
+            return dt.strftime("%d.%m.%Y")
+
+        lines = [
+            f"📡 Охват уведомлений: {chat_name}\n",
+            f"Всего участников: {total}",
+            f"Запустили бота: {len(started)}",
+            f"Получают сообщения: {len(active)}",
+            f"Заблокировали: {len(blocked)}",
+            f"Не запускали бота: {len(never)}",
+        ]
+
+        if blocked:
+            lines.append("\n🚫 Заблокировали бота:")
+            for u in sorted(blocked, key=lambda x: x.bot_last_message_at or datetime.min, reverse=True):
+                lines.append(f"• {_name(u)} (последнее: {_date(u.bot_last_message_at)})")
+
+        await message.reply("\n".join(lines))
 
 
 @router.message(Command("help"))

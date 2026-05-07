@@ -17,6 +17,8 @@ from bot.services.karma import KarmaService
 from bot.database.repositories import UserKarmaRepository
 from bot.i18n import t
 
+_BOT_BLOCKED_ERRORS = ("bot was blocked", "chat not found", "user is deactivated", "bot was kicked")
+
 
 router = Router(name="messages")
 logger = logging.getLogger(__name__)
@@ -141,15 +143,19 @@ async def notify_users(
             group_name_block=group_name_block,
         )
 
+        user_service = UserService(session)
         for user_id in user_ids:
             try:
                 await bot.send_message(
                     chat_id=user_id,
                     text=notification_text
                 )
+                await user_service.update_bot_delivery(user_id, success=True)
             except Exception as e:
-                error_msg = str(e)
+                error_msg = str(e).lower()
                 logger.error(f"Error sending notification to user {user_id}: {error_msg}")
+                if any(marker in error_msg for marker in _BOT_BLOCKED_ERRORS):
+                    await user_service.update_bot_delivery(user_id, success=False)
     except Exception as e:
         logger.error(f"Error in notify_users: {e}", exc_info=True)
 
