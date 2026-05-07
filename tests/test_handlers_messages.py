@@ -70,7 +70,7 @@ async def test_post_message_newcomer_includes_all_time_line_with_zero(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert "🌱" in reply_text
-    assert t("supported_all_time", lang="ru", count=0) in reply_text
+    assert t("supported_all_time", lang="ru", count=0, first_day=0) in reply_text
 
 
 async def test_post_message_regular_includes_all_time_line(
@@ -95,7 +95,7 @@ async def test_post_message_regular_includes_all_time_line(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert "🌱" not in reply_text
-    assert t("supported_all_time", lang="ru", count=7) in reply_text
+    assert t("supported_all_time", lang="ru", count=7, first_day=0) in reply_text
 
 
 async def test_post_message_veteran_includes_all_time_line(
@@ -120,7 +120,7 @@ async def test_post_message_veteran_includes_all_time_line(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert "🎖️50 - поддержал других за всё время" in reply_text
-    assert t("supported_all_time", lang="ru", count=50) in reply_text
+    assert t("supported_all_time", lang="ru", count=50, first_day=0) in reply_text
 
 
 async def test_post_message_english_includes_all_time_line(
@@ -146,7 +146,7 @@ async def test_post_message_english_includes_all_time_line(
     message.reply.assert_awaited_once()
     reply_text = message.reply.await_args.args[0]
     assert t("asks_support", lang="en") in reply_text
-    assert t("supported_all_time", lang="en", count=5) in reply_text
+    assert t("supported_all_time", lang="en", count=5, first_day=0) in reply_text
 
 
 async def test_notify_users_includes_group_title_when_present(

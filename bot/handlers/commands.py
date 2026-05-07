@@ -161,33 +161,42 @@ async def cmd_karma(message: Message):
                         chat_id=chat_id,
                         period_days=chat_settings.karma_period_days
                     )
+                    weekly_first_day = await karma_service.get_weekly_first_day_karma(
+                        user_id=target_user.telegram_id,
+                        chat_id=chat_id,
+                        period_days=chat_settings.karma_period_days
+                    )
                     weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
                         user_id=target_user.telegram_id,
                         chat_id=chat_id,
                         period_days=chat_settings.karma_period_days
                     )
+                    total_first_day = await karma_service.get_total_first_day_karma(
+                        user_id=target_user.telegram_id,
+                        chat_id=chat_id
+                    )
                     total_first_hour = await karma_service.get_total_first_hour_karma(
                         user_id=target_user.telegram_id,
                         chat_id=chat_id
                     )
-                    
+
                     stars = karma_service.karma_to_stars(weekly_karma)
                     karma_display = f"{stars} ({weekly_karma})" if stars else str(weekly_karma)
-                    
+
                     # Try to get chat title (we'll use chat_id as fallback)
                     try:
                         chat = await message.bot.get_chat(chat_id)
                         chat_name = chat.title or f"Chat {chat_id}"
                     except:
                         chat_name = f"Chat {chat_id}"
-                    
+
                     response += (
                         f"💬 {chat_name}:\n"
                         f"  {t('weekly', lang=lang)}: {karma_display}\n"
+                        f"  {t('of_which_first_day', lang=lang, count=weekly_first_day)}\n"
                         f"  {t('of_which_first_hour', lang=lang, count=weekly_first_hour)}\n"
                         f"  {t('total', lang=lang)}: {total_karma_value}\n"
-                        f"  {t('supported_all_time', lang=lang, count=total_karma_value)}\n"
-                        f"  {t('of_which_first_hour', lang=lang, count=total_first_hour)}\n\n"
+                        f"  {t('supported_all_time', lang=lang, count=total_karma_value, first_day=total_first_day)}\n\n"
                     )
         else:
             # In groups, show karma for this group only
@@ -200,10 +209,19 @@ async def cmd_karma(message: Message):
                 chat_id=message.chat.id,
                 period_days=settings.karma_period_days
             )
+            weekly_first_day = await karma_service.get_weekly_first_day_karma(
+                user_id=target_user.telegram_id,
+                chat_id=message.chat.id,
+                period_days=settings.karma_period_days
+            )
             weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
                 user_id=target_user.telegram_id,
                 chat_id=message.chat.id,
                 period_days=settings.karma_period_days
+            )
+            total_first_day = await karma_service.get_total_first_day_karma(
+                user_id=target_user.telegram_id,
+                chat_id=message.chat.id
             )
             total_first_hour = await karma_service.get_total_first_hour_karma(
                 user_id=target_user.telegram_id,
@@ -223,9 +241,10 @@ async def cmd_karma(message: Message):
             response = (
                 f"📊 {t('your_karma', lang=lang)} {username_display}\n\n"
                 f"{t('weekly', lang=lang)}: {karma_display}\n"
+                f"{t('of_which_first_day', lang=lang, count=weekly_first_day)}\n"
                 f"{t('of_which_first_hour', lang=lang, count=weekly_first_hour)}\n"
                 f"{t('total', lang=lang)}: {total_karma}\n"
-                f"{t('supported_all_time', lang=lang, count=total_karma)}\n"
+                f"{t('supported_all_time', lang=lang, count=total_karma, first_day=total_first_day)}\n"
                 f"{t('of_which_first_hour', lang=lang, count=total_first_hour)}"
             )
 

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.database import get_session
 from bot.services.linkedin import extract_linkedin_urls_from_message
+from bot.services.motivation import get_category, get_phrase
 from bot.services.user import UserService
 from bot.services.karma import KarmaService
 from bot.database.repositories import UserKarmaRepository
@@ -244,6 +245,11 @@ async def handle_message(message: Message):
             chat_id=message.chat.id,
             period_days=settings.karma_period_days
         )
+        weekly_first_day = await karma_service.get_weekly_first_day_karma(
+            user_id=user.telegram_id,
+            chat_id=message.chat.id,
+            period_days=settings.karma_period_days
+        )
         weekly_first_hour = await karma_service.get_weekly_first_hour_karma(
             user_id=user.telegram_id,
             chat_id=message.chat.id,
@@ -270,48 +276,62 @@ async def handle_message(message: Message):
             user_id=user.telegram_id,
             chat_id=message.chat.id
         )
+        total_first_day_karma = await karma_service.get_total_first_day_karma(
+            user_id=user.telegram_id,
+            chat_id=message.chat.id
+        )
         all_time_display = t(
             "supported_all_time",
             lang=lang,
-            count=total_karma
+            count=total_karma,
+            first_day=total_first_day_karma
         )
         
         if is_newcomer:
-            # Newcomer: "📝 @username 🌱 asks for support\nPer 7 days - Supported others: (0) | Asked for support: 1"
             response = t(
                 "post_newcomer",
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
                 all_time=all_time_display,
+                first_day=weekly_first_day,
                 first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
         elif is_veteran:
-            # Veteran: "📝 @username 🎖️ (47) asks for support\nPer 7 days - Supported others: ⭐⭐ (4) | Asked for support: 1"
             response = t(
                 "post_veteran",
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
                 all_time=all_time_display,
+                first_day=weekly_first_day,
                 first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
         else:
-            # Regular: "📝 @username asks for support\nPer 7 days - Supported others: ⭐⭐⭐ (8) | Asked for support: 2"
             response = t(
                 "post_regular",
                 lang=lang,
                 username=username_display,
                 karma=karma_display,
                 all_time=all_time_display,
+                first_day=weekly_first_day,
                 first_hour=weekly_first_hour,
                 posts=weekly_posts,
                 period=settings.karma_period_days
             )
+
+        category = get_category(
+            is_newcomer=is_newcomer,
+            is_veteran=is_veteran,
+            weekly_karma=weekly_karma,
+            weekly_first_hour=weekly_first_hour,
+            weekly_first_day=weekly_first_day,
+        )
+        response = response + "\n\n" + get_phrase(category, lang)
 
         await message.reply(response)
         try:

@@ -14,7 +14,8 @@ translations = {
     "your_karma": "Your karma",
     "weekly": "weekly",
     "total": "total",
-    "supported_all_time": "🎖️{count} - supported others all-time",
+    "supported_all_time": "🎖️{count} - supported others all-time, of which {first_day} in first day",
+    "of_which_first_day": "of which in first day: {count}",
     "of_which_first_hour": "of which in first hour: {count}",
 
     # Leaderboard messages
@@ -84,9 +85,9 @@ Good luck earning karma!
     "post_already_registered": "This post is already registered",
     "first_post": "Congratulations on your first post!",
     "not_enough_karma": "Not enough karma to post. Required: {required}, you have: {current}",
-    "post_newcomer": "📝 {username} asks for support (🌱{all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
-    "post_veteran": "📝 {username} asks for support ({all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
-    "post_regular": "📝 {username} asks for support ({all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_newcomer": "📝 {username} asks for support (🌱{all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n📅 Of which in first day: {first_day}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_veteran": "📝 {username} asks for support ({all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n📅 Of which in first day: {first_day}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
+    "post_regular": "📝 {username} asks for support ({all_time})\nFor the last {period} days:\n🙌 Supported others: {karma}\n📅 Of which in first day: {first_day}\n🚀 Of which in first hour: {first_hour}\n🤝 Asked for support: {posts}",
 
     # Reaction messages
     "reaction_added": "Support counted!",

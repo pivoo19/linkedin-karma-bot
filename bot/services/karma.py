@@ -82,6 +82,17 @@ class KarmaService:
         delta_seconds = (reaction_utc - post_utc).total_seconds()
         return 0 <= delta_seconds <= 3600
 
+    @classmethod
+    def is_within_first_day(cls, reaction_time: datetime, post_time: datetime) -> bool:
+        """Check if reaction happened within first day after post publication."""
+        if reaction_time is None or post_time is None:
+            return False
+
+        reaction_utc = cls._to_utc_naive(reaction_time)
+        post_utc = cls._to_utc_naive(post_time)
+        delta_seconds = (reaction_utc - post_utc).total_seconds()
+        return 0 <= delta_seconds <= 86400
+
     async def get_total_karma(self, user_id: int, chat_id: Optional[int] = None) -> int:
         """Get user's total karma.
 
@@ -177,6 +188,54 @@ class KarmaService:
         unique_post_ids = {
             post_id for post_id, reaction_time, post_time in rows
             if self.is_within_first_hour(reaction_time, post_time)
+        }
+        return len(unique_post_ids)
+
+    async def get_weekly_first_day_karma(
+        self,
+        user_id: int,
+        chat_id: int,
+        period_days: int = 7
+    ) -> int:
+        """Count unique supported posts in period where support was in first day."""
+        cutoff_date = datetime.utcnow() - timedelta(days=period_days)
+
+        query = (
+            select(Reaction.post_id, Reaction.created_at, Post.created_at)
+            .join(Post, Reaction.post_id == Post.id)
+            .where(
+                Reaction.user_id == user_id,
+                Post.chat_id == chat_id,
+                Reaction.created_at >= cutoff_date
+            )
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        unique_post_ids = {
+            post_id for post_id, reaction_time, post_time in rows
+            if self.is_within_first_day(reaction_time, post_time)
+        }
+        return len(unique_post_ids)
+
+    async def get_total_first_day_karma(self, user_id: int, chat_id: int) -> int:
+        """Count unique supported posts where support was in first day (all-time)."""
+        query = (
+            select(Reaction.post_id, Reaction.created_at, Post.created_at)
+            .join(Post, Reaction.post_id == Post.id)
+            .where(
+                Reaction.user_id == user_id,
+                Post.chat_id == chat_id
+            )
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        unique_post_ids = {
+            post_id for post_id, reaction_time, post_time in rows
+            if self.is_within_first_day(reaction_time, post_time)
         }
         return len(unique_post_ids)
 
