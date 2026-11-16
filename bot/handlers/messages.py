@@ -38,7 +38,12 @@ def get_message_link(message: Message) -> str:
     
     chat_id = message.chat.id
     message_id = message.message_id
-    
+
+    # Messages in forum topics need the topic id in the link: .../{topic_id}/{message_id}.
+    # Replies in regular supergroups also carry message_thread_id, so check is_topic_message.
+    if message.is_topic_message and message.message_thread_id:
+        message_id = f"{message.message_thread_id}/{message_id}"
+
     # If chat has username, use public link format
     if message.chat.username:
         return f"https://t.me/{message.chat.username}/{message_id}"

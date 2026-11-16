@@ -201,3 +201,39 @@ async def test_notify_users_omits_group_title_when_absent(
     bot.send_message.assert_awaited_once()
     sent_text = bot.send_message.await_args.kwargs["text"]
     assert "🏷️" not in sent_text
+
+
+# --- Message links in forum topics -----------------------------------------
+
+from types import SimpleNamespace as _NS  # noqa: E402
+
+from bot.handlers.messages import get_message_link  # noqa: E402
+
+
+def _link_message(*, username=None, thread_id=None, is_topic_message=None):
+    return _NS(
+        chat=_NS(id=-1003511001635, username=username),
+        message_id=2373,
+        message_thread_id=thread_id,
+        is_topic_message=is_topic_message,
+    )
+
+
+def test_message_link_in_forum_topic_includes_topic_id():
+    message = _link_message(thread_id=2366, is_topic_message=True)
+    assert get_message_link(message) == "https://t.me/c/3511001635/2366/2373"
+
+
+def test_message_link_in_public_forum_topic_includes_topic_id():
+    message = _link_message(username="mygroup", thread_id=2366, is_topic_message=True)
+    assert get_message_link(message) == "https://t.me/mygroup/2366/2373"
+
+
+def test_message_link_in_general_topic_has_no_topic_id():
+    assert get_message_link(_link_message()) == "https://t.me/c/3511001635/2373"
+
+
+def test_message_link_reply_in_non_forum_supergroup_has_no_topic_id():
+    # Replies in regular supergroups carry message_thread_id but are not topic messages.
+    message = _link_message(thread_id=2300, is_topic_message=None)
+    assert get_message_link(message) == "https://t.me/c/3511001635/2373"
