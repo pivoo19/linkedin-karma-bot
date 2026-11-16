@@ -7,9 +7,23 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 
 from sqlalchemy import select, func, update, delete, and_
+from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.models import User, Post, Reaction, GroupSettings, GroupTopic, UserKarma
+
+
+def _insert_ignore_conflict(session: AsyncSession, model, **values):
+    """Build INSERT ... ON CONFLICT DO NOTHING RETURNING <primary key>.
+
+    Handlers run concurrently, so check-then-insert can race. With this statement the
+    losing insert does nothing instead of raising IntegrityError, and an empty result
+    tells the caller that the row already existed.
+    """
+    dialect = session.get_bind().dialect.name
+    insert = postgresql.insert if dialect == "postgresql" else sqlite.insert
+    primary_key = model.__table__.primary_key.columns
+    return insert(model).values(**values).on_conflict_do_nothing().returning(*primary_key)
 
 
 class UserRepository:
@@ -482,13 +496,17 @@ class SettingsRepository:
         if settings is not None:
             return settings, False
 
-        # Create new settings with defaults
-        settings = GroupSettings(chat_id=chat_id)
-        self.session.add(settings)
+        # Create new settings with defaults; another handler may insert concurrently
+        result = await self.session.execute(
+            _insert_ignore_conflict(self.session, GroupSettings, chat_id=chat_id)
+        )
+        created = result.first() is not None
         await self.session.commit()
-        await self.session.refresh(settings)
 
-        return settings, True
+        result = await self.session.execute(
+            select(GroupSettings).where(GroupSettings.chat_id == chat_id)
+        )
+        return result.scalar_one(), created
 
     async def get(self, chat_id: int) -> Optional[GroupSettings]:
         """
@@ -576,9 +594,15 @@ class TopicRepository:
         """Enable the bot in a topic. Returns True if it was not enabled before."""
         if await self.is_enabled(chat_id, topic_id):
             return False
-        self.session.add(GroupTopic(chat_id=chat_id, topic_id=topic_id))
+        # Another handler may enable the same topic concurrently
+        result = await self.session.execute(
+            _insert_ignore_conflict(
+                self.session, GroupTopic, chat_id=chat_id, topic_id=topic_id
+            )
+        )
+        created = result.first() is not None
         await self.session.commit()
-        return True
+        return created
 
     async def disable(self, chat_id: int, topic_id: int) -> bool:
         """Disable the bot in a topic. Returns True if it was enabled."""
