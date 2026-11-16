@@ -17,6 +17,7 @@ from bot.services.karma import KarmaService
 from bot.services.stats import StatsService
 from bot.database.repositories import UserKarmaRepository
 from bot.i18n import t
+from bot.services.rules import build_rules_text
 from bot.handlers.admin import is_admin
 
 
@@ -747,6 +748,22 @@ async def cb_reach(callback: CallbackQuery):
 
     await callback.message.edit_text(text)
     await callback.answer()
+
+
+@router.message(Command("about_karma"))
+async def cmd_about_karma(message: Message):
+    """Show the game rules. Works in groups and in private chats."""
+    if not message.chat:
+        return
+
+    if message.chat.type == "private":
+        await message.reply(build_rules_text("ru", 0))
+        return
+
+    async with get_session() as session:
+        user_service = UserService(session)
+        settings = await user_service.get_or_create_settings(message.chat.id)
+        await message.reply(build_rules_text(settings.language, settings.post_cost))
 
 
 @router.message(Command("help"))

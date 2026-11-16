@@ -9,6 +9,7 @@ from .user_karma import UserKarma
 from .post import Post
 from .reaction import Reaction
 from .settings import GroupSettings
+from .group_topic import GroupTopic
 
 __all__ = [
     "Base",
@@ -18,4 +19,5 @@ __all__ = [
     "Post",
     "Reaction",
     "GroupSettings",
+    "GroupTopic",
 ]
