@@ -13,7 +13,7 @@ want the bot to register posts, award karma and answer commands only in the topi
   only for registered posts, which can now appear only in enabled topics.
 
 ## Admin commands (group admins only, reuse `is_admin`)
-- `/karma_on`: enable the current topic. The bot then posts the rules message in that topic.
+- `/karma_on`: enable the current topic. The bot then posts the "enabled" line and the rules message in that topic.
   Sending it in an already enabled topic just repeats the rules.
 - `/karma_off`: disable the current topic. The bot sends a short confirmation.
 - `/karma_topics`: list the enabled topics.
@@ -22,9 +22,20 @@ want the bot to register posts, award karma and answer commands only in the topi
 - The "General" topic can be enabled. Its messages have no `message_thread_id`, so it is
   stored as the reserved id `1`, which is how Telegram identifies General.
 
+## `/about_karma` (any member)
+Prints the rules message. In forums it works only in enabled topics, like the other commands.
+In regular groups and private chats it works everywhere; in private chats the text is in Russian
+(same as `/start`).
+
 ## Rules message (ru, agreed text; en is a translation)
+After `/karma_on`, the bot first sends the line "✅ Карма-бот включён в этом топике!" and then
+the rules message. `/about_karma` sends only the rules message.
 ```
-👋 Карма-бот включён в этом топике!
+🎮 Правила игры
+
+Здесь мы помогаем друг другу расти в LinkedIn. Каждый лайк,
+комментарий и репост — это чей-то шанс быть замеченным,
+получить оффер или найти своих людей. Вместе мы сильнее любого алгоритма! 💪
 
 Как это работает:
 1. Делитесь ссылкой на свой пост в LinkedIn, чтобы другие
@@ -42,12 +53,16 @@ want the bot to register posts, award karma and answer commands only in the topi
 /karma — ваша карма
 /top — топ за {period} дней
 /top_all — топ за всё время
+/about_karma — правила игры
 /help — подробнее
+
+Добро возвращается — особенно в LinkedIn. Поехали! 🚀
 ```
 `{period}` comes from the group's `karma_period_days`. If `post_cost > 0`, the line
 "Публикация поста стоит {cost} очков кармы." is added. The language is the group's language.
 
-`/help` gets the three new commands in its admin section (ru and en).
+`/help` gets the three new commands in its admin section and `/about_karma` in the user
+commands (ru and en).
 
 ## Approaches considered
 - **A (chosen): new table `group_topics` (`chat_id`, `topic_id`, PK on both) plus one shared
