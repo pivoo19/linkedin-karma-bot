@@ -14,9 +14,12 @@ from aiogram.types import Message, MessageEntity
 # - linkedin.com/posts/...
 # - linkedin.com/feed/update/...
 # - linkedin.com/pulse/...
+# - lnkd.in/p/... (post short links shared from the mobile app; other lnkd.in
+#   links usually wrap external sites, so they are not accepted)
 LINKEDIN_PATTERN = re.compile(
-    r'https?://(?:www\.)?linkedin\.com/'
-    r'(?:posts/[^\s]+|feed/update/[^\s]+|pulse/[^\s]+)',
+    r'https?://(?:www\.)?'
+    r'(?:linkedin\.com/(?:posts/[^\s]+|feed/update/[^\s]+|pulse/[^\s]+)'
+    r'|lnkd\.in/p/[^\s]+)',
     re.IGNORECASE
 )
 
