@@ -49,17 +49,12 @@ the rules message. `/about_karma` sends only the rules message.
 
 🔔 Хотите узнавать о новых постах сразу? Напишите мне /start в личку.
 
-Команды:
-/karma — ваша карма
-/top — топ за {period} дней
-/top_all — топ за всё время
-/about_karma — правила игры
-/help — подробнее
-
 Добро возвращается — особенно в LinkedIn. Поехали! 🚀
 ```
-`{period}` comes from the group's `karma_period_days`. If `post_cost > 0`, the line
-"Публикация поста стоит {cost} очков кармы." is added. The language is the group's language.
+The text has no command list: in groups `/karma`, `/top`, `/top_all` and `/stats` are admin-only,
+and `/help` works only in private chats. If `post_cost > 0`, the line
+"Публикация поста стоит {cost} очков кармы." is added before the 🔔 line. The language is the
+group's language.
 
 `/help` gets the three new commands in its admin section and `/about_karma` in the user
 commands (ru and en).
