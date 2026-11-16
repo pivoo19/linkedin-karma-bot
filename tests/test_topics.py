@@ -220,8 +220,124 @@ def test_routers_order_and_filters():
     def has_topic_filter(router) -> bool:
         return any(isinstance(f.callback, KarmaTopicFilter) for f in router.message._handler.filters)
 
-    routers = {r.name: r for r in get_routers()}
-    assert get_routers()[0].name == "topics"
-    assert not has_topic_filter(routers["topics"])
-    for name in ("admin", "commands", "messages"):
-        assert has_topic_filter(routers[name]), name
+    routers = get_routers()
+    assert [r.name for r in routers] == ["topics", "reactions", "topic_gated"]
+    by_name = {r.name: r for r in routers}
+    assert not has_topic_filter(by_name["topics"])
+    assert not has_topic_filter(by_name["reactions"])
+
+    gated = by_name["topic_gated"]
+    assert has_topic_filter(gated)
+    assert [r.name for r in gated.sub_routers] == ["admin", "commands", "messages"]
+    for child in gated.sub_routers:
+        assert not has_topic_filter(child), child.name
+
+
+# --- Real Dispatcher: the topic check runs once per message -----------------
+
+from datetime import datetime, timezone  # noqa: E402
+
+from aiogram import Bot, Dispatcher  # noqa: E402
+from aiogram.types import Update  # noqa: E402
+
+from bot.handlers import messages as messages_handler  # noqa: E402
+
+
+@pytest.fixture(scope="session")
+def dispatcher():
+    """Build the Dispatcher once: aiogram forbids attaching a router to two parents."""
+    from bot.handlers import get_routers
+
+    dp = Dispatcher()
+    for router in get_routers():
+        dp.include_router(router)
+    return dp
+
+
+@pytest.fixture
+async def bot():
+    bot = Bot(token="42:TEST")
+    yield bot
+    await bot.session.close()
+
+
+@pytest.fixture
+def topic_checks(monkeypatch):
+    """Count topic checks; topics 7 and 1 (General) are enabled."""
+    calls: list[tuple[int, int]] = []
+
+    @asynccontextmanager
+    async def _get_session():
+        yield None
+
+    async def _is_enabled(self, chat_id: int, topic_id: int) -> bool:
+        calls.append((chat_id, topic_id))
+        return topic_id in (1, 7)
+
+    monkeypatch.setattr(topics_handler, "get_session", _get_session)
+    monkeypatch.setattr(TopicRepository, "is_enabled", _is_enabled)
+    return calls
+
+
+@pytest.fixture
+def link_handler_calls(monkeypatch):
+    """Count deliveries to the LinkedIn link handler without touching the DB."""
+    calls: list[str] = []
+
+    def _extract(message):
+        calls.append(message.text)
+        return []
+
+    monkeypatch.setattr(messages_handler, "extract_linkedin_urls_from_message", _extract)
+    return calls
+
+
+def make_update(*, is_forum: bool, thread_id: int | None, sticker: bool = False) -> Update:
+    chat = {"id": FORUM_CHAT_ID, "type": "supergroup", "title": "Test"}
+    if is_forum:
+        chat["is_forum"] = True
+    message = {
+        "message_id": 10,
+        "date": int(datetime.now(timezone.utc).timestamp()),
+        "chat": chat,
+        "from": {"id": 111, "is_bot": False, "first_name": "Test"},
+    }
+    if thread_id is not None:
+        message["message_thread_id"] = thread_id
+        if is_forum:
+            message["is_topic_message"] = True
+    if sticker:
+        message["sticker"] = {
+            "file_id": "f", "file_unique_id": "u", "type": "regular",
+            "width": 512, "height": 512, "is_animated": False, "is_video": False,
+        }
+    else:
+        message["text"] = "hello"
+    return Update.model_validate({"update_id": 1, "message": message})
+
+
+@pytest.mark.parametrize("sticker", [False, True], ids=["text", "sticker"])
+@pytest.mark.parametrize("thread_id", [7, 8], ids=["enabled", "disabled"])
+async def test_forum_message_checks_topic_once(
+    dispatcher, bot, topic_checks, link_handler_calls, sticker, thread_id
+):
+    await dispatcher.feed_update(bot, make_update(is_forum=True, thread_id=thread_id, sticker=sticker))
+    assert topic_checks == [(FORUM_CHAT_ID, thread_id)]
+    expected = 1 if (thread_id == 7 and not sticker) else 0
+    assert len(link_handler_calls) == expected
+
+
+async def test_forum_general_message_checked_as_topic_1(
+    dispatcher, bot, topic_checks, link_handler_calls
+):
+    await dispatcher.feed_update(bot, make_update(is_forum=True, thread_id=None))
+    assert topic_checks == [(FORUM_CHAT_ID, 1)]
+    assert link_handler_calls == ["hello"]
+
+
+async def test_non_forum_reply_with_thread_id_skips_topic_check(
+    dispatcher, bot, topic_checks, link_handler_calls
+):
+    await dispatcher.feed_update(bot, make_update(is_forum=False, thread_id=42))
+    assert topic_checks == []
+    assert link_handler_calls == ["hello"]

@@ -37,3 +37,10 @@ def test_help_lists_new_commands():
         help_text = t("help_text", lang=lang)
         for command in ("/about_karma", "/karma_on", "/karma_off", "/karma_topics"):
             assert command in help_text
+
+
+def test_rules_start_command_not_clickable():
+    for lang in ("ru", "en"):
+        text = build_rules_text(lang, 0)
+        assert "<code>/start</code>" in text
+        assert text.count("/start") == 1

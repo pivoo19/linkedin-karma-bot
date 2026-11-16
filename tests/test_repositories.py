@@ -372,3 +372,46 @@ class TestTopicRepository:
         for topic_id in (9, 1, 5):
             await repo.enable(chat_id=-100, topic_id=topic_id)
         assert await repo.list_topics(chat_id=-100) == [1, 5, 9]
+
+
+class TestConcurrentInserts:
+    """Two handlers racing on the same row must not raise IntegrityError."""
+
+    async def test_topic_enable_with_stale_check(self, async_session: AsyncSession, monkeypatch):
+        repo = TopicRepository(async_session)
+        await repo.enable(chat_id=-100, topic_id=5)  # "another handler" got there first
+
+        async def _stale_is_enabled(self, chat_id, topic_id):
+            return False
+
+        monkeypatch.setattr(TopicRepository, "is_enabled", _stale_is_enabled)
+
+        assert await repo.enable(chat_id=-100, topic_id=5) is False
+        assert await repo.list_topics(chat_id=-100) == [5]
+
+    async def test_settings_get_or_create_row_appears_after_select(
+        self, async_session: AsyncSession, monkeypatch
+    ):
+        from sqlalchemy import insert
+
+        original_execute = async_session.execute
+        state = {"calls": 0}
+
+        async def _racing_execute(statement, *args, **kwargs):
+            result = await original_execute(statement, *args, **kwargs)
+            state["calls"] += 1
+            if state["calls"] == 1:
+                # Another handler inserts the row between our SELECT and INSERT.
+                await original_execute(insert(GroupSettings).values(chat_id=-555))
+                await async_session.commit()
+            return result
+
+        monkeypatch.setattr(async_session, "execute", _racing_execute)
+
+        settings, created = await SettingsRepository(async_session).get_or_create(chat_id=-555)
+
+        assert created is False
+        assert settings.chat_id == -555
+        assert settings.language == "ru"
+        assert settings.karma_period_days == 7
+        assert settings.post_cost == 0

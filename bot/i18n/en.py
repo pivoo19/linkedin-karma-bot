@@ -152,7 +152,7 @@ How it works:
 I don't check the support on LinkedIn itself, I just count reactions here.
 Your own posts don't count; removing a reaction takes the point back.
 
-{post_cost_line}🔔 Want to hear about new posts right away? Send me /start in a private chat.
+{post_cost_line}🔔 Want to hear about new posts right away? Send me <code>/start</code> in a private chat.
 
 Good things come back, especially on LinkedIn. Let's go! 🚀
 """,
