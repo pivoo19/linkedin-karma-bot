@@ -43,7 +43,10 @@ def make_message(
         is_topic_message=True if thread_id is not None and is_forum else None,
         from_user=SimpleNamespace(id=user_id, username="tester", first_name="Test", last_name=None),
         reply=AsyncMock(),
-        bot=SimpleNamespace(),
+        bot=SimpleNamespace(
+            id=999,
+            get_chat_member=AsyncMock(return_value=SimpleNamespace(status="administrator")),
+        ),
     )
 
 
@@ -341,3 +344,45 @@ async def test_non_forum_reply_with_thread_id_skips_topic_check(
     await dispatcher.feed_update(bot, make_update(is_forum=False, thread_id=42))
     assert topic_checks == []
     assert link_handler_calls == ["hello"]
+
+
+# --- Bot admin rights warning in /karma_on ------------------------------------
+
+
+@pytest.mark.parametrize("status", ["member", "restricted"])
+async def test_karma_on_warns_when_bot_is_not_admin(patch_topics_session, admin, status):
+    message = make_message(text="/karma_on", thread_id=7)
+    message.bot.get_chat_member = AsyncMock(return_value=SimpleNamespace(status=status))
+    await topics_handler.cmd_karma_on(message)
+    assert replies(message) == [
+        t("karma_topic_enabled", lang="ru") + "\n\n" + t("bot_needs_admin", lang="ru"),
+        build_rules_text("ru", 0),
+    ]
+    message.bot.get_chat_member.assert_awaited_once_with(chat_id=FORUM_CHAT_ID, user_id=999)
+
+
+@pytest.mark.parametrize("status", ["administrator", "creator"])
+async def test_karma_on_no_warning_when_bot_is_admin(patch_topics_session, admin, status):
+    message = make_message(text="/karma_on", thread_id=7)
+    message.bot.get_chat_member = AsyncMock(return_value=SimpleNamespace(status=status))
+    await topics_handler.cmd_karma_on(message)
+    assert replies(message)[0] == t("karma_topic_enabled", lang="ru")
+
+
+async def test_karma_on_no_warning_when_rights_check_fails(patch_topics_session, admin):
+    message = make_message(text="/karma_on", thread_id=7)
+    message.bot.get_chat_member = AsyncMock(side_effect=RuntimeError("telegram is down"))
+    await topics_handler.cmd_karma_on(message)
+    assert replies(message) == [
+        t("karma_topic_enabled", lang="ru"),
+        build_rules_text("ru", 0),
+    ]
+    assert await TopicRepository(patch_topics_session).list_topics(FORUM_CHAT_ID) == [7]
+
+
+def test_bot_needs_admin_text():
+    assert t("bot_needs_admin", lang="ru") == (
+        "⚠️ Сделайте меня администратором группы — без этого я не вижу реакции "
+        "и не смогу начислять карму."
+    )
+    assert t("bot_needs_admin", lang="en").startswith("⚠️")

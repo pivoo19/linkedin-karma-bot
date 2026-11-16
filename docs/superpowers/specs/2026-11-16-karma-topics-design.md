@@ -14,6 +14,9 @@ want the bot to register posts, award karma and answer commands only in the topi
 
 ## Admin commands (group admins only, reuse `is_admin`)
 - `/karma_on`: enable the current topic. The bot then posts the "enabled" line and the rules message in that topic.
+  If the bot is not a group admin (Telegram sends reactions only to admin bots), the "enabled"
+  message also says: "⚠️ Сделайте меня администратором группы — без этого я не вижу реакции и не
+  смогу начислять карму." If the rights check fails, no warning is shown.
   Sending it in an already enabled topic just repeats the rules.
 - `/karma_off`: disable the current topic. The bot sends a short confirmation.
 - `/karma_topics`: list the enabled topics.
@@ -47,13 +50,13 @@ the rules message. `/about_karma` sends only the rules message.
 Я не проверяю саму поддержку в LinkedIn, я просто считаю реакции здесь.
 Свои посты не считаются, снятая реакция — минус очко.
 
-🔔 Хотите узнавать о новых постах сразу? Напишите мне /start в личку.
+⚡ Чем быстрее поддержка, тем больше охват. Напишите мне /start в личку — и получайте запросы на поддержку моментально.
 
 Добро возвращается — особенно в LinkedIn. Поехали! 🚀
 ```
 The text has no command list: in groups `/karma`, `/top`, `/top_all` and `/stats` are admin-only,
 and `/help` works only in private chats. If `post_cost > 0`, the line
-"Публикация поста стоит {cost} очков кармы." is added before the 🔔 line. The language is the
+"Публикация поста стоит {cost} очков кармы." is added before the ⚡ line. The language is the
 group's language.
 
 `/help` gets the three new commands in its admin section and `/about_karma` in the user

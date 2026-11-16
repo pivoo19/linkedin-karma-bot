@@ -24,7 +24,7 @@ def test_rules_no_cost_line_when_free():
 def test_rules_cost_line_when_paid():
     text = build_rules_text("ru", 3)
     assert "Публикация поста стоит 3 очков кармы." in text
-    assert text.index("Публикация поста стоит") < text.index("🔔")
+    assert text.index("Публикация поста стоит") < text.index("⚡")
     assert "\n\n\n" not in text
 
 
@@ -44,3 +44,12 @@ def test_rules_start_command_not_clickable():
         text = build_rules_text(lang, 0)
         assert "<code>/start</code>" in text
         assert text.count("/start") == 1
+
+
+def test_rules_speed_line():
+    assert (
+        "⚡ Чем быстрее поддержка, тем больше охват. Напишите мне <code>/start</code> в личку "
+        "— и получайте запросы на поддержку моментально."
+    ) in build_rules_text("ru", 0)
+    assert "🔔" not in build_rules_text("ru", 0)
+    assert "⚡" in build_rules_text("en", 0)
