@@ -156,6 +156,7 @@ Configuration is managed through environment variables. See `.env.example` for a
 - `/top` - View top users by karma in this group
 - `/top_all` - View top users by total karma in this group
 - `/stats` - View group statistics
+- `/about_karma` - Show the game rules
 
 ### Admin Commands
 
@@ -165,6 +166,16 @@ Configuration is managed through environment variables. See `.env.example` for a
 - `/set_post_cost <points>` - Set karma cost to post
 - `/reset_karma @username` - Reset user's karma to zero
 - `/export` - Export group statistics as CSV file
+- `/karma_on` - Enable the bot in the current forum topic (posts the game rules)
+- `/karma_off` - Disable the bot in the current forum topic
+- `/karma_topics` - List forum topics where the bot is enabled
+
+### Groups with topics (forums)
+
+In supergroups with topics the bot is **off in every topic by default**. A group admin sends
+`/karma_on` in each topic where the bot should work; there it registers LinkedIn posts, awards
+karma and answers commands. In all other topics it stays silent. Regular groups and supergroups
+without topics work as before, with no setup.
 
 ## Usage
 
