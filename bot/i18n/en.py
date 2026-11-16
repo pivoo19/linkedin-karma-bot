@@ -153,7 +153,7 @@ How it works:
 I don't check the support on LinkedIn itself, I just count reactions here.
 Your own posts don't count; removing a reaction takes the point back.
 
-{post_cost_line}🔔 Want to hear about new posts right away? Send me <code>/start</code> in a private chat.
+{post_cost_line}⚡ The faster the support, the bigger the reach. Send me <code>/start</code> in a private chat and get support requests instantly.
 
 Good things come back, especially on LinkedIn. Let's go! 🚀
 """,
@@ -161,6 +161,7 @@ Good things come back, especially on LinkedIn. Let's go! 🚀
 
     # Karma topics (forum supergroups)
     "karma_topic_enabled": "✅ Karma bot is enabled in this topic!",
+    "bot_needs_admin": "⚠️ Make me a group administrator — without it I can't see reactions and can't award karma.",
     "karma_topic_disabled": "Karma bot is disabled in this topic.",
     "karma_topic_not_enabled": "Karma bot is not enabled in this topic.",
     "karma_topics_list": "Karma bot is enabled in topics:\n{topics}",

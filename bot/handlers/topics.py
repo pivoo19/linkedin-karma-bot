@@ -56,6 +56,23 @@ def topic_link(chat_id: int, topic_id: int) -> str:
     return f"https://t.me/c/{internal_id}/{topic_id}"
 
 
+async def bot_is_admin(message: Message) -> bool:
+    """Return True if the bot is an admin in the chat.
+
+    Telegram sends reaction updates only to admin bots, so without admin rights
+    karma cannot be awarded. If the check itself fails, assume rights are fine
+    rather than show a false warning.
+    """
+    try:
+        member = await message.bot.get_chat_member(
+            chat_id=message.chat.id, user_id=message.bot.id
+        )
+    except Exception as e:
+        logger.warning(f"Could not check bot rights in chat {message.chat.id}: {e}")
+        return True
+    return member.status in ("administrator", "creator")
+
+
 async def _check_forum_admin(message: Message, lang: str) -> bool:
     """Reply and return False unless this is a forum and the sender is an admin."""
     if not is_forum(message):
@@ -80,7 +97,10 @@ async def cmd_karma_on(message: Message):
         topic_id = topic_id_of(message)
         await TopicRepository(session).enable(message.chat.id, topic_id)
         logger.info(f"Karma enabled in chat {message.chat.id} topic {topic_id}")
-        await message.reply(t("karma_topic_enabled", lang=lang))
+        enabled_text = t("karma_topic_enabled", lang=lang)
+        if not await bot_is_admin(message):
+            enabled_text += "\n\n" + t("bot_needs_admin", lang=lang)
+        await message.reply(enabled_text)
         await message.reply(build_rules_text(lang, settings.post_cost))
 
 
