@@ -43,6 +43,7 @@ services:
       DEFAULT_KARMA_PERIOD: ${DEFAULT_KARMA_PERIOD:-7}
       DEFAULT_VETERAN_THRESHOLD: ${DEFAULT_VETERAN_THRESHOLD:-30}
       DEFAULT_POST_COST: ${DEFAULT_POST_COST:-0}
+      SUPERADMIN_ID: ${SUPERADMIN_ID:-0}
     # volumes:
     #   # Mount bot code for development (comment out for production)
     #   - ./bot:/app/bot
