@@ -43,6 +43,7 @@ How it works:
 Available commands:
 /start - Start working with the bot
 /help - Show this help message
+/about_karma - Game rules
 /karma - View your karma
 /top - Top members this week
 /top_all - All-time top members
@@ -55,6 +56,9 @@ Admin commands:
 /set_post_cost <number> - Set post cost in karma points
 /reset_karma @username - Reset user's karma
 /export - Export statistics to CSV
+/karma_on - Enable the bot in the current topic
+/karma_off - Disable the bot in the current topic
+/karma_topics - Topics where the bot is enabled
 
 Rating system:
 ⭐ - 1-2 karma points
@@ -112,6 +116,7 @@ To learn more, use the /help command
 Available commands:
 /start - Start working with the bot
 /help - Show help message
+/about_karma - Game rules
 /karma - View your karma
 /top - Top members this week
 /top_all - All-time top members
@@ -128,4 +133,37 @@ Available commands:
     "admin_notification": "🔔 New help request\n\n{response}\n\n📎 Message link: {message_link}",
     "group_name_block": " \"{title}\"",
     "user_notification": "🔔 New post in group{group_name_block}\n\n{response}\n\n📎 Message link: {message_link}",
+
+    # Game rules (sent in groups by /karma_on and /about_karma)
+    "rules_text": """
+🎮 Game rules
+
+Here we help each other grow on LinkedIn. Every like,
+comment and repost is someone's chance to get noticed,
+land an offer or find their people. Together we're stronger than any algorithm! 💪
+
+How it works:
+1. Share a link to your LinkedIn post so others
+   can support you there.
+2. Supported someone's post on LinkedIn (a like, better a comment,
+   maybe even a repost)? Put any reaction on the message
+   with that post here and get +1 karma.
+
+I don't check the support on LinkedIn itself, I just count reactions here.
+Your own posts don't count; removing a reaction takes the point back.
+
+{post_cost_line}🔔 Want to hear about new posts right away? Send me /start in a private chat.
+
+Good things come back, especially on LinkedIn. Let's go! 🚀
+""",
+    "rules_post_cost": "Posting costs {cost} karma points.",
+
+    # Karma topics (forum supergroups)
+    "karma_topic_enabled": "✅ Karma bot is enabled in this topic!",
+    "karma_topic_disabled": "Karma bot is disabled in this topic.",
+    "karma_topic_not_enabled": "Karma bot is not enabled in this topic.",
+    "karma_topics_list": "Karma bot is enabled in topics:\n{topics}",
+    "karma_topics_empty": "Karma bot is not enabled in any topic yet. Send /karma_on in the topic you need.",
+    "karma_topic_general": "General",
+    "forum_only_command": "This command works only in groups with topics.",
 }
