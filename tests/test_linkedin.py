@@ -345,3 +345,49 @@ class TestLinkedInMessageExtraction:
         urls = extract_linkedin_urls_from_message(message)
         assert len(urls) == 1
         assert "linkedin.com/posts/" in urls[0]
+
+
+class TestShortLinks:
+    """lnkd.in/p/<code> short links shared from the LinkedIn mobile app."""
+
+    def test_short_link_extracted(self):
+        assert extract_linkedin_urls("Мой пост https://lnkd.in/p/eMunJYSY") == [
+            "https://lnkd.in/p/eMunJYSY"
+        ]
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://lnkd.in/p/eMunJYSY",
+            "http://lnkd.in/p/eMunJYSY",
+            "https://www.lnkd.in/p/eMunJYSY",
+            "https://lnkd.in/p/eMunJYSY?trk=x",
+            "HTTPS://LNKD.IN/p/eMunJYSY",
+        ],
+    )
+    def test_short_link_is_linkedin_url(self, url):
+        assert is_linkedin_url(url) is True
+        assert is_linkedin_post(f"see {url}") is True
+
+    def test_short_link_without_p_rejected(self):
+        assert is_linkedin_url("https://lnkd.in/dAbC123") is False
+        assert extract_linkedin_urls("https://lnkd.in/dAbC123") == []
+
+    def test_short_link_empty_code_rejected(self):
+        assert is_linkedin_url("https://lnkd.in/p/") is False
+        assert extract_linkedin_urls("look https://lnkd.in/p/ here") == []
+
+    def test_short_link_from_text_link_entity(self):
+        message = MagicMock()
+        message.text = "Мой пост"
+        entity = MagicMock()
+        entity.type = "text_link"
+        entity.url = "https://lnkd.in/p/eMunJYSY"
+        message.entities = [entity]
+        assert extract_linkedin_urls_from_message(message) == ["https://lnkd.in/p/eMunJYSY"]
+
+    def test_help_lists_short_links(self):
+        from bot.i18n import t
+
+        for lang in ("ru", "en"):
+            assert "lnkd.in/p/..." in t("help_text", lang=lang)
