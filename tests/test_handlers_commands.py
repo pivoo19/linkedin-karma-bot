@@ -125,9 +125,10 @@ async def test_group_karma_works_for_admin(
     expected_response = (
         f"📊 {t('your_karma', lang='ru')} @tester\n\n"
         f"{t('weekly', lang='ru')}: 0\n"
+        f"{t('of_which_first_day', lang='ru', count=0)}\n"
         f"{t('of_which_first_hour', lang='ru', count=0)}\n"
         f"{t('total', lang='ru')}: 0\n"
-        f"{t('supported_all_time', lang='ru', count=0)}\n"
+        f"{t('supported_all_time', lang='ru', count=0, first_day=0)}\n"
         f"{t('of_which_first_hour', lang='ru', count=0)}"
     )
     assert reply_text == expected_response
@@ -190,10 +191,10 @@ async def test_private_karma_includes_all_time_support_for_each_chat(
         f"📊 {t('your_karma', lang='ru')} @tester\n\n"
         f"💬 Test Group:\n"
         f"  {t('weekly', lang='ru')}: 0\n"
+        f"  {t('of_which_first_day', lang='ru', count=0)}\n"
         f"  {t('of_which_first_hour', lang='ru', count=0)}\n"
         f"  {t('total', lang='ru')}: 7\n"
-        f"  {t('supported_all_time', lang='ru', count=7)}\n"
-        f"  {t('of_which_first_hour', lang='ru', count=0)}\n\n"
+        f"  {t('supported_all_time', lang='ru', count=7, first_day=0)}\n\n"
     )
     assert reply_text == expected_response
 
@@ -230,9 +231,10 @@ async def test_group_karma_english_includes_full_format(
     expected_response = (
         f"📊 {t('your_karma', lang='en')} @tester\n\n"
         f"{t('weekly', lang='en')}: 0\n"
+        f"{t('of_which_first_day', lang='en', count=0)}\n"
         f"{t('of_which_first_hour', lang='en', count=0)}\n"
         f"{t('total', lang='en')}: 5\n"
-        f"{t('supported_all_time', lang='en', count=5)}\n"
+        f"{t('supported_all_time', lang='en', count=5, first_day=0)}\n"
         f"{t('of_which_first_hour', lang='en', count=0)}"
     )
     assert reply_text == expected_response
