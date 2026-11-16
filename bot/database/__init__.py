@@ -17,6 +17,7 @@ from .repositories import (
     PostRepository,
     ReactionRepository,
     SettingsRepository,
+    TopicRepository,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "PostRepository",
     "ReactionRepository",
     "SettingsRepository",
+    "TopicRepository",
 ]

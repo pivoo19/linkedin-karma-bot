@@ -9,6 +9,7 @@ from bot.database.repositories import (
     PostRepository,
     ReactionRepository,
     SettingsRepository,
+    TopicRepository,
     UserRepository,
 )
 from bot.models import GroupSettings, Post, Reaction, User
@@ -338,3 +339,36 @@ class TestSettingsRepository:
         assert updated_settings is not None
         assert updated_settings.language == original_language  # unchanged
         assert updated_settings.karma_period_days == 10  # updated
+
+
+class TestTopicRepository:
+    """Test TopicRepository functionality."""
+
+    async def test_enable_new_returns_true(self, async_session: AsyncSession):
+        repo = TopicRepository(async_session)
+        assert await repo.enable(chat_id=-100, topic_id=5) is True
+        assert await repo.is_enabled(chat_id=-100, topic_id=5) is True
+
+    async def test_enable_twice_returns_false(self, async_session: AsyncSession):
+        repo = TopicRepository(async_session)
+        await repo.enable(chat_id=-100, topic_id=5)
+        assert await repo.enable(chat_id=-100, topic_id=5) is False
+        assert await repo.list_topics(chat_id=-100) == [5]
+
+    async def test_disable(self, async_session: AsyncSession):
+        repo = TopicRepository(async_session)
+        await repo.enable(chat_id=-100, topic_id=5)
+        assert await repo.disable(chat_id=-100, topic_id=5) is True
+        assert await repo.disable(chat_id=-100, topic_id=5) is False
+        assert await repo.is_enabled(chat_id=-100, topic_id=5) is False
+
+    async def test_is_enabled_scoped_by_chat(self, async_session: AsyncSession):
+        repo = TopicRepository(async_session)
+        await repo.enable(chat_id=-1, topic_id=5)
+        assert await repo.is_enabled(chat_id=-2, topic_id=5) is False
+
+    async def test_list_topics_sorted(self, async_session: AsyncSession):
+        repo = TopicRepository(async_session)
+        for topic_id in (9, 1, 5):
+            await repo.enable(chat_id=-100, topic_id=topic_id)
+        assert await repo.list_topics(chat_id=-100) == [1, 5, 9]

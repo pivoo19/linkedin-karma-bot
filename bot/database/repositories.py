@@ -9,7 +9,7 @@ from typing import Optional, List
 from sqlalchemy import select, func, update, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.models import User, Post, Reaction, GroupSettings, UserKarma
+from bot.models import User, Post, Reaction, GroupSettings, GroupTopic, UserKarma
 
 
 class UserRepository:
@@ -554,6 +554,51 @@ class SettingsRepository:
             await self.session.refresh(settings)
 
         return settings
+
+
+class TopicRepository:
+    """Repository for GroupTopic model operations (enabled forum topics)."""
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def is_enabled(self, chat_id: int, topic_id: int) -> bool:
+        """Return True if the bot is enabled in this forum topic."""
+        result = await self.session.execute(
+            select(GroupTopic.topic_id).where(
+                GroupTopic.chat_id == chat_id,
+                GroupTopic.topic_id == topic_id,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def enable(self, chat_id: int, topic_id: int) -> bool:
+        """Enable the bot in a topic. Returns True if it was not enabled before."""
+        if await self.is_enabled(chat_id, topic_id):
+            return False
+        self.session.add(GroupTopic(chat_id=chat_id, topic_id=topic_id))
+        await self.session.commit()
+        return True
+
+    async def disable(self, chat_id: int, topic_id: int) -> bool:
+        """Disable the bot in a topic. Returns True if it was enabled."""
+        result = await self.session.execute(
+            delete(GroupTopic).where(
+                GroupTopic.chat_id == chat_id,
+                GroupTopic.topic_id == topic_id,
+            )
+        )
+        await self.session.commit()
+        return result.rowcount > 0
+
+    async def list_topics(self, chat_id: int) -> list[int]:
+        """Return enabled topic IDs for a chat, sorted ascending."""
+        result = await self.session.execute(
+            select(GroupTopic.topic_id)
+            .where(GroupTopic.chat_id == chat_id)
+            .order_by(GroupTopic.topic_id)
+        )
+        return list(result.scalars().all())
 
 
 class UserKarmaRepository:
